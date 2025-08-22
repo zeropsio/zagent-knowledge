@@ -78,8 +78,7 @@ mcp__zerops__get_service_logs({service}devId)
 
 ### Using Environment Variables
 ```bash
-# Check what's available
-ssh apidev "env | grep -E '^[A-Z_]+=' | sort"
+# Check what's available using discovery mcp call
 
 # Common variables:
 # - db_connectionString (from database)

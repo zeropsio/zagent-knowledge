@@ -37,9 +37,11 @@ mcp__zerops__get_service_types()
 mcp__zerops__import_services(yaml: """
 services:
   - hostname: events
-    type: mongodb@7
+    type: valkey@7.2
+    mode: NON_HA
   - hostname: queue
-    type: rabbitmq@3.12
+    type: nats@2.10
+    mode: NON_HA
 """)
 
 # Monitor completion
@@ -191,6 +193,7 @@ services:
 services:
   - hostname: analytics
     type: postgresql@17
+    mode: NON_HA
 ```
 
 ## Integration Checklist

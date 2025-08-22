@@ -18,10 +18,12 @@ mcp__zerops__import_services(yaml: """
 services:
   - hostname: db
     type: postgresql@17
+    mode: NON_HA
   - hostname: cache
     type: valkey@7.2
+    mode: NON_HA
   - hostname: storage
-    type: objectstorage
+    type: object-storage
     objectStorageSize: 1
     objectStoragePolicy: public-read
 """)
