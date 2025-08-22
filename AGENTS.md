@@ -1,6 +1,16 @@
 # Zerops Coding Agent
 
 ## 🚨 MANDATORY SESSION START
+
+**CRITICAL: Do NOT create any TODOs until you complete the mandatory session and choose your path.**
+
+**Phase 1 TODO - Create this ONLY:**
+```
+☐ Complete mandatory session (discovery + path selection)
+☐ Load appropriate TODO template based on chosen path
+```
+
+**Mandatory Session Steps:**
 ```bash
 echo $projectId  # MEMORIZE this value for all MCP calls
 mcp__zerops__discovery($projectId)  # Get service IDs, hostnames, env vars
@@ -25,26 +35,68 @@ mcp__zerops__discovery($projectId)  # Get service IDs, hostnames, env vars
 - Both must succeed before writing real code
 - This finds config issues with 10 lines, not 1000
 
-## Choose Your Path
+## Choose Your Path & Load TODO Template
 
-After Discovery, determine your goal:
+After Discovery, determine your goal and REPLACE your Phase 1 TODO with the appropriate template:
 
 ### Path A: Fresh Project → Full Setup Required
 ```bash
 mcp__zerops__load_platform_guide("fresh_project")
-# Remember: Law 2 (hello-world) then Law 1 (dev server) apply here
+# Use Path A TODO Template below
 ```
 
 ### Path B: Existing Service → Start Development
 ```bash
 mcp__zerops__load_platform_guide("existing_service")
-# Remember: Law 1 (dev server before code) applies here
+# Use Path B TODO Template below
 ```
 
 ### Path C: Add New Service(s) → Setup Then Develop
 ```bash
 mcp__zerops__load_platform_guide("add_services")
-# Remember: Law 2 (hello-world) then Law 1 (dev server) apply here
+# Use Path C TODO Template below
+```
+
+## TODO Templates (Replace Phase 1 TODO with chosen template)
+
+### Path A TODO Template (Fresh Project)
+```
+☐ Import semi-managed services (databases, storage, etc.)
+☐ Wait for ACTIVE status using discovery polling
+☐ Import runtime services (dev/stage pairs)
+☐ Wait for expected states and mount dev services
+☐ Create hello-world with complete zerops.yml (Law 2)
+☐ Test dev deployment with git init
+☐ Test stage deployment
+☐ Start dev server and verify responding (Law 1)
+☐ [INSERT: Break down your specific application requirements here]
+☐ Deploy to stage and verify
+☐ Comprehensive testing
+```
+
+### Path B TODO Template (Existing Service)
+```
+☐ Start dev server and verify responding (Law 1)
+☐ [INSERT: Break down your specific development tasks here]
+☐ Test changes incrementally on dev server
+☐ Deploy to stage when ready
+☐ Verify stage deployment works
+☐ Comprehensive testing
+```
+
+### Path C TODO Template (Add Services)
+```
+☐ Import new services (semi-managed first, then runtime)
+☐ Wait for ACTIVE status using discovery polling  
+☐ Mount dev services for new runtime services
+☐ Create hello-world for new services with complete zerops.yml (Law 2)
+☐ Test dev deployment with git init
+☐ Test stage deployment
+☐ Start dev server and verify responding (Law 1)
+☐ [INSERT: Break down your specific application requirements here]
+☐ Integrate with existing services
+☐ Deploy to stage and verify
+☐ Comprehensive testing
 ```
 
 ## Path B: Continuous Development (Most Common)
