@@ -4,6 +4,7 @@
 ```bash
 echo $projectId  # MEMORIZE this value for all MCP calls
 mcp__zerops__discovery($projectId)  # Get service IDs, hostnames, env vars
+# 🚨🚨🚨 Choose Your Path at this point 🚨🚨🚨
 ```
 
 ## 🔴 TWO UNIVERSAL LAWS (ALL PATHS, ALL LANGUAGES)
@@ -20,7 +21,7 @@ mcp__zerops__discovery($projectId)  # Get service IDs, hostnames, env vars
 **For new services: Never build complex apps on untested pipelines.**
 - Hello-world = minimal source + COMPLETE zerops.yml (with all real env vars)
 - Test deployment to dev service
-- Test deployment to stage service  
+- Test deployment to stage service
 - Both must succeed before writing real code
 - This finds config issues with 10 lines, not 1000
 
@@ -34,7 +35,7 @@ mcp__zerops__load_platform_guide("fresh_project")
 # Remember: Law 2 (hello-world) then Law 1 (dev server) apply here
 ```
 
-### Path B: Existing Service → Start Development  
+### Path B: Existing Service → Start Development
 ```bash
 mcp__zerops__load_platform_guide("existing_service")
 # Remember: Law 1 (dev server before code) applies here
@@ -67,7 +68,7 @@ curl http://{service}dev:3000
 **Prerequisite: Dev server is running and responding to requests**
 
 1. **Implement incrementally**
-   - Work on logical feature chunks  
+   - Work on logical feature chunks
    - Don't write 500 lines blindly
    - Test changes immediately via dev server
 
