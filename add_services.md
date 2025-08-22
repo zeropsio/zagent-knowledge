@@ -44,9 +44,7 @@ services:
     mode: NON_HA
 """)
 
-# Monitor completion
-processId = response.processId
-mcp__zerops__get_running_processes(processId)
+# Wait for services to become ACTIVE using discovery polling
 ```
 
 ### Auto-Generated Variables
@@ -69,6 +67,9 @@ services:
   - hostname: paymentstage
     type: nodejs@22
 """)
+
+# Wait for dev services: ACTIVE, stage services: READY_TO_DEPLOY
+# Then mount dev services before creating files
 ```
 
 **Why startWithoutCode?** Without it, dev service won't start until you deploy code. With it, you can SSH immediately.
@@ -77,12 +78,12 @@ services:
 
 **Even for additional services, you MUST:**
 
-1. **Create minimal working app**
+1. **Create minimal working app** (after mounting dev services)
    ```bash
    # Get template for your runtime
    mcp__zerops__knowledge_base("nodejs", "dev_stage_example")
 
-   # Create hello-world that uses new dependencies
+   # Create hello-world that uses new dependencies (only after mounting)
    cat > /var/www/paymentdev/index.js << 'EOF'
    const PORT = process.env.PORT || 3000;
    require('http').createServer((req, res) => {

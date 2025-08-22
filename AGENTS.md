@@ -214,9 +214,7 @@ services:
     type: valkey@7.2
 """)
 
-# 2. Monitor completion
-processId = response.processId
-mcp__zerops__get_running_processes(processId)
+# 2. Wait for services to become ACTIVE using discovery polling
 
 # 3. Import runtime pairs with startWithoutCode
 mcp__zerops__import_services(yaml: """
@@ -227,6 +225,10 @@ services:
   - hostname: apistage
     type: nodejs@22
 """)
+
+# Wait for dev services: ACTIVE, stage services: READY_TO_DEPLOY
+# Then mount dev services before creating files
+
 # Note: startWithoutCode allows immediate SSH access
 
 # 4. Get appropriate template
@@ -246,6 +248,21 @@ processId = response.processId
 status = mcp__zerops__get_running_processes(processId)
 # Repeat until process disappears from list
 ```
+
+## Import Services Pattern (CRITICAL)
+
+**After ANY `mcp__zerops__import_services` call:**
+
+1. **Wait for services to reach expected states** by calling `mcp__zerops__discovery(projectId)` every 10 seconds until:
+   - Semi-managed services (databases, caches, storage): status = `ACTIVE`
+   - Dev services with `startWithoutCode`: status = `ACTIVE` 
+   - Stage services without `startWithoutCode`: status = `READY_TO_DEPLOY`
+
+2. **Mount all dev services** using `mcp__zerops__remount_service(hostname)` before any file operations
+
+3. **Only then proceed** with hello-world creation or development work
+
+**NEVER create files in /var/www/ paths until services are ACTIVE and mounted. This will fail.**
 
 ## Preview URLs
 ```bash

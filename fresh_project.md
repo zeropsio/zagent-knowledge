@@ -28,9 +28,7 @@ services:
     objectStoragePolicy: public-read
 """)
 
-# Get processId and monitor
-processId = response.processId
-mcp__zerops__get_running_processes(processId)  # Poll until gone
+# Wait for services to become ACTIVE using discovery polling
 ```
 
 **Available service types:** Use `mcp__zerops__get_service_types()` to see current list.
@@ -51,18 +49,23 @@ services:
   - hostname: workerstage
     type: python@3.11
 """)
+
+# Wait for dev services: ACTIVE, stage services: READY_TO_DEPLOY
+# Then mount dev services before creating files
 ```
 
 **Why startWithoutCode?** Creates empty container you can SSH into immediately. Without this, container won't start until first deployment.
 
-### 3. Create Hello-World for EACH Service
+### 3. Wait for Services and Mount Before File Operations
+
+**CRITICAL: Wait for dev services to be ACTIVE and mount them first**
 
 #### For Node.js Service:
 ```bash
 # Get template
 mcp__zerops__knowledge_base("nodejs", "dev_stage_example")
 
-# Create files
+# Create files (only after mounting)
 cat > /var/www/apidev/package.json << 'EOF'
 {
   "name": "hello-api",
