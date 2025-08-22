@@ -92,7 +92,7 @@ After hello-world verification, start the dev server before writing real code.
    mcp__zerops__knowledge_base("nodejs", "dev_stage_example")
 
    # Create hello-world that uses new dependencies (only after mounting)
-   cat > /var/www/paymentdev/index.js << 'EOF'
+   cat > paymentdev/index.js << 'EOF'
    const PORT = process.env.PORT || 3000;
    require('http').createServer((req, res) => {
      res.writeHead(200);
@@ -134,6 +134,9 @@ After hello-world verification, start the dev server before writing real code.
 
 3. **Test both deployments**
    ```bash
+   # Initialize git first
+   ssh paymentdev "git init && git add . && git commit -m 'Payment service setup'"
+
    # Deploy to dev
    ssh paymentdev "zcli push --serviceId={PAYMENTDEV_ID} --setup=dev"
 

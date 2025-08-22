@@ -21,7 +21,7 @@ curl http://{service}dev:3000
 curl http://{service}dev:3000/api/status
 
 # 3. NOW you can code with immediate feedback
-# Edit files in /var/www/{service}dev/
+# Edit files directly in service directories
 ```
 
 ## Development Flow
@@ -40,13 +40,13 @@ curl http://{service}dev:3000/api/status
    httpie POST apidev:3000/api/auth username=test
 
    # Frontend
-   node /var/www/.tools/puppeteer_check.js http://webdev:3000
+   node .tools/puppeteer_check.js http://webdev:3000
    ```
 
 3. **When feature is ready, deploy to stage**
    ```bash
    # Check setup name
-   grep "setup:" /var/www/{service}dev/zerops.yml
+   grep "setup:" {service}dev/zerops.yml
 
    # Deploy
    ssh {service}dev "zcli push --serviceId={STAGE_ID} --setup={SETUP_NAME}"
@@ -122,7 +122,7 @@ ssh {service}dev "npm run dev"
 ### Can't See Files
 ```bash
 # Mounts disconnected
-ls /var/www/{service}dev/ || mcp__zerops__remount_service("{service}dev")
+ls {service}dev/ || mcp__zerops__remount_service("{service}dev")
 ```
 
 ### Stage Deploy Failed

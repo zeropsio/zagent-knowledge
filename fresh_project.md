@@ -72,7 +72,7 @@ services:
 mcp__zerops__knowledge_base("nodejs", "dev_stage_example")
 
 # Create files (only after mounting)
-cat > /var/www/apidev/package.json << 'EOF'
+cat > apidev/package.json << 'EOF'
 {
   "name": "hello-api",
   "scripts": {
@@ -82,7 +82,7 @@ cat > /var/www/apidev/package.json << 'EOF'
 }
 EOF
 
-cat > /var/www/apidev/index.js << 'EOF'
+cat > apidev/index.js << 'EOF'
 const PORT = process.env.PORT || 3000;
 require('http').createServer((req, res) => {
   res.writeHead(200);
@@ -130,6 +130,9 @@ zerops:
 ### 4. Test BOTH Deployments
 
 ```bash
+# CRITICAL: Initialize git first
+ssh apidev "git init && git add . && git commit -m 'Hello world setup'"
+
 # Deploy to dev (tests pipeline, applies envs)
 ssh apidev "zcli push --serviceId={APIDEV_ID} --setup=dev"
 

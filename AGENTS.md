@@ -79,7 +79,7 @@ curl http://{service}dev:3000
    httpie POST apidev:3000/api/login user=test
 
    # Frontend: Check rendering and errors
-   node /var/www/.tools/puppeteer_check.js http://webdev:3000 \
+   node .tools/puppeteer_check.js http://webdev:3000 \
      --check-console --check-network
    ```
 
@@ -91,26 +91,28 @@ curl http://{service}dev:3000
    # - New init commands?
    # - Environment variables?
 
-   # Get setup name
-   grep "setup:" /var/www/{service}dev/zerops.yml
+   # CRITICAL: First deployment needs git init
+   ssh {service}dev "git init && git add . && git commit -m 'Initial commit'"
 
-   # Deploy (you're in /var/www by default)
+   # Get setup name
+   grep "setup:" {service}dev/zerops.yml
+
+   # Deploy
    ssh {service}dev "zcli push --serviceId={STAGE_ID} --setup={SETUP_NAME}"
    ```
 
 4. **Verify stage (MANDATORY)**
    ```bash
    curl http://{service}stage:3000/api/endpoint
-   node /var/www/.tools/puppeteer_check.js http://{service}stage:3000
+   node .tools/puppeteer_check.js http://{service}stage:3000
    ```
 
 ## Command Routing Rules
 
 ### File Operations → Native on zagent
 ```bash
-# Use your agent's tools on mounted paths
-/var/www/{service}/src/index.js
-/var/www/{service}/app.py
+# Use your agent's tools directly on service files
+# Agent operates in work directory with mounted services
 ```
 
 ### Runtime Commands → SSH to service
@@ -187,7 +189,7 @@ ssh workerdev "echo \$apidev_NEW_FEATURE"
 ### Pre-Deploy Review
 ```bash
 # Review ENTIRE zerops.yml - not just deployFiles!
-cat /var/www/{service}dev/zerops.yml
+cat {service}dev/zerops.yml
 
 # Check for needed updates:
 # - deployFiles: includes new directories?
@@ -212,7 +214,7 @@ ssh {service}dev "zcli push --serviceId={STAGE_ID} --setup={SETUP_NAME}"
 curl http://{service}stage:3000/api/status
 
 # 2. Check mounts (disconnects on deploy/restart)
-ls /var/www/{service}dev/ || mcp__zerops__remount_service("{service}dev")
+ls {service}dev/ || mcp__zerops__remount_service("{service}dev")
 ```
 
 ## Path A & C: New Service Setup
@@ -291,7 +293,7 @@ status = mcp__zerops__get_running_processes(processId)
 
 3. **Only then proceed** with hello-world creation or development work
 
-**NEVER create files in /var/www/ paths until dev services are ACTIVE and mounted. This will fail.**
+**NEVER create files in service directories until dev services are ACTIVE and mounted. This will fail.**
 
 ## Preview URLs
 ```bash
