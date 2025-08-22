@@ -69,16 +69,24 @@ services:
 """)
 
 # Wait for dev services: ACTIVE, stage services: READY_TO_DEPLOY
-# Then mount dev services before creating files
+# Mount only dev services before creating files
 ```
 
 **Why startWithoutCode?** Without it, dev service won't start until you deploy code. With it, you can SSH immediately.
 
-### The Hello-World Requirement
+### Universal Laws Apply Here
 
-**Even for additional services, you MUST:**
+**Law 2: Hello-World Pipeline Validation**
 
-1. **Create minimal working app** (after mounting dev services)
+Even for additional services, you MUST validate the pipeline first:
+
+**Law 1: Dev Server Before Code**
+
+After hello-world verification, start the dev server before writing real code.
+
+**The requirements:**
+
+1. **Create minimal working app** (after mounting the dev service)
    ```bash
    # Get template for your runtime
    mcp__zerops__knowledge_base("nodejs", "dev_stage_example")

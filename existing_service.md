@@ -4,21 +4,23 @@
 
 This guide is for the **most common scenario** - the service already exists, hello-world was done, and you just need to develop.
 
-## Quick Start Checklist
+## Law 1: Dev Server MUST Run First
+
+**Universal requirement: You cannot code without a running dev server**
 
 ```bash
-# 1. Start dev server (MANDATORY FIRST)
-ssh {service}dev "npm run dev"     # Node.js
-ssh {service}dev "python app.py"   # Python
-ssh {service}dev "go run ."        # Go
-ssh {service}dev "bundle exec rails server -b 0.0.0.0"  # Ruby
-# PHP starts automatically
+# 1. Install dependencies then start dev server (MANDATORY FIRST)
+ssh {service}dev "npm install && npm run dev"     # Node.js
+ssh {service}dev "pip install -r requirements.txt && python app.py"   # Python
+ssh {service}dev "go mod download && go run ."        # Go
+ssh {service}dev "bundle install && bundle exec rails server -b 0.0.0.0"  # Ruby
+# PHP: composer install (starts automatically)
 
-# 2. Verify it's responding
+# 2. Verify it's responding (CRITICAL)
 curl http://{service}dev:3000
 curl http://{service}dev:3000/api/status
 
-# 3. Start coding
+# 3. NOW you can code with immediate feedback
 # Edit files in /var/www/{service}dev/
 ```
 

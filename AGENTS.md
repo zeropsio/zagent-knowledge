@@ -4,8 +4,25 @@
 ```bash
 echo $projectId  # MEMORIZE this value for all MCP calls
 mcp__zerops__discovery($projectId)  # Get service IDs, hostnames, env vars
-# 🚨🚨🚨 Now Choose Your Path 🚨🚨🚨
 ```
+
+## 🔴 TWO UNIVERSAL LAWS (ALL PATHS, ALL LANGUAGES)
+
+### Law 1: Dev Server Runs BEFORE Code
+**You cannot write code without a running dev server. Period.**
+- The dev server is your feedback loop - without it you're blind
+- Install dependencies first (npm install, pip install, go mod download, etc.)
+- Start the development server (npm run dev, python app.py, go run ., etc.)
+- Verify it responds (curl the endpoint)
+- ONLY THEN write code
+
+### Law 2: Hello-World Validates BEFORE Complexity
+**For new services: Never build complex apps on untested pipelines.**
+- Hello-world = minimal source + COMPLETE zerops.yml (with all real env vars)
+- Test deployment to dev service
+- Test deployment to stage service  
+- Both must succeed before writing real code
+- This finds config issues with 10 lines, not 1000
 
 ## Choose Your Path
 
@@ -14,42 +31,45 @@ After Discovery, determine your goal:
 ### Path A: Fresh Project → Full Setup Required
 ```bash
 mcp__zerops__load_platform_guide("fresh_project")
-# Follow complete setup: databases → services → hello-world → development
+# Remember: Law 2 (hello-world) then Law 1 (dev server) apply here
 ```
 
-### Path B: Existing Service → Start Development
+### Path B: Existing Service → Start Development  
 ```bash
 mcp__zerops__load_platform_guide("existing_service")
-# Start dev server → Code → Test → Deploy to stage
+# Remember: Law 1 (dev server before code) applies here
 ```
 
 ### Path C: Add New Service(s) → Setup Then Develop
 ```bash
 mcp__zerops__load_platform_guide("add_services")
-# Import services → Hello-world verification → Development
+# Remember: Law 2 (hello-world) then Law 1 (dev server) apply here
 ```
 
 ## Path B: Continuous Development (Most Common)
 
-### Start Development
+### Start Development (Law 1: Dev Server First)
 ```bash
-# 1. Start dev server (ALWAYS FIRST)
-ssh {service}dev "npm run dev"     # Node.js
-ssh {service}dev "python app.py"   # Python
-ssh {service}dev "go run ."        # Go
-# PHP starts automatically - no command needed
+# The pattern (adapt to your runtime):
+# 1. Install dependencies (npm install, pip install, go mod download)
+# 2. Start dev server (npm run dev, python app.py, go run ., etc.)
+# 3. Verify responding (curl the endpoint)
+# 4. ONLY THEN write code
 
-# 2. Verify it's running
-curl http://{service}dev:3000      # Or appropriate port
+# Example for Node.js:
+ssh {service}dev "npm install && npm run dev"
+curl http://{service}dev:3000
 
-# 3. NOW start coding
-# Use your file editing tools on /var/www/{service}dev/
+# NOW you can write code with immediate feedback
 ```
 
-### Senior Developer Workflow
+### Senior Developer Workflow (Law 1 Must Be Running)
+**Prerequisite: Dev server is running and responding to requests**
+
 1. **Implement incrementally**
-   - Work on logical feature chunks
+   - Work on logical feature chunks  
    - Don't write 500 lines blindly
+   - Test changes immediately via dev server
 
 2. **Test reasonably on dev**
    ```bash
@@ -196,13 +216,20 @@ ls /var/www/{service}dev/ || mcp__zerops__remount_service("{service}dev")
 
 ## Path A & C: New Service Setup
 
-### The Critical Hello-World Pattern
+### The Hello-World Pattern (Law 2)
 
-**Why Hello-World First?**
-- Verifies deployment pipeline works
-- Ensures all envs are accessible
-- Catches config issues early
-- Prevents mid-development surprises
+**Hello-World is NOT about simple code - it's about pipeline validation**
+
+Components:
+1. **Minimal source**: Just enough to verify service connectivity
+2. **Complete zerops.yml**: Include ALL env vars your real app needs
+3. **Full test cycle**: Deploy to dev, deploy to stage, verify both
+
+**Why this prevents disasters:**
+- Config errors surface with 10 lines of code, not 1000
+- Missing env vars are caught before complex implementations
+- Deployment issues are fixed before you've invested days in code
+- You KNOW the pipeline works before building on it
 
 ### Setup Flow
 ```bash
@@ -228,7 +255,7 @@ services:
 """)
 
 # Wait for dev services: ACTIVE, stage services: READY_TO_DEPLOY
-# Then mount dev services before creating files
+# Mount only dev services before creating files
 
 # Note: startWithoutCode allows immediate SSH access
 
@@ -259,11 +286,11 @@ status = mcp__zerops__get_running_processes(processId)
    - Dev services with `startWithoutCode`: status = `ACTIVE`
    - Stage services without `startWithoutCode`: status = `READY_TO_DEPLOY`
 
-2. **Mount all dev services** using `mcp__zerops__remount_service(hostname)` before any file operations
+2. **Mount dev services only** using `mcp__zerops__remount_service(hostname)` before file operations on that service
 
 3. **Only then proceed** with hello-world creation or development work
 
-**NEVER create files in /var/www/ paths until services are ACTIVE and mounted. This will fail.**
+**NEVER create files in /var/www/ paths until dev services are ACTIVE and mounted. This will fail.**
 
 ## Preview URLs
 ```bash

@@ -4,9 +4,15 @@
 
 This guide is for **completely new projects** where you need to set up everything from the beginning.
 
-## The Hello-World Pattern (NON-NEGOTIABLE)
+## Universal Laws Apply Here
 
-**Why this matters:** Most deployment failures happen because people skip this step and go straight to complex code. The hello-world pattern ensures your entire pipeline works BEFORE you write real code.
+**Law 2: Hello-World Pipeline Validation (NON-NEGOTIABLE)**
+
+Most deployment failures happen because people skip this step and go straight to complex code. Hello-world ensures your entire pipeline works BEFORE you write real code.
+
+**Law 1: Dev Server Before Code**
+
+After hello-world verification, you MUST start the dev server before writing your real application.
 
 ## Step-by-Step Fresh Project Setup
 
@@ -51,7 +57,7 @@ services:
 """)
 
 # Wait for dev services: ACTIVE, stage services: READY_TO_DEPLOY
-# Then mount dev services before creating files
+# Mount only dev services before creating files
 ```
 
 **Why startWithoutCode?** Creates empty container you can SSH into immediately. Without this, container won't start until first deployment.
@@ -193,4 +199,5 @@ run:
 - [ ] Test stage deployment for each
 - [ ] Set all environment variables
 - [ ] Restart services to apply envs
+- [ ] Start dev server (Law 1)
 - [ ] NOW start real development
