@@ -4,6 +4,7 @@
 ```bash
 echo $projectId  # MEMORIZE this value for all MCP calls
 mcp__zerops__discovery($projectId)  # Get service IDs, hostnames, env vars
+# 🚨🚨🚨 Now Choose Your Path 🚨🚨🚨
 ```
 
 ## Choose Your Path
@@ -255,7 +256,7 @@ status = mcp__zerops__get_running_processes(processId)
 
 1. **Wait for services to reach expected states** by calling `mcp__zerops__discovery(projectId)` every 10 seconds until:
    - Semi-managed services (databases, caches, storage): status = `ACTIVE`
-   - Dev services with `startWithoutCode`: status = `ACTIVE` 
+   - Dev services with `startWithoutCode`: status = `ACTIVE`
    - Stage services without `startWithoutCode`: status = `READY_TO_DEPLOY`
 
 2. **Mount all dev services** using `mcp__zerops__remount_service(hostname)` before any file operations
