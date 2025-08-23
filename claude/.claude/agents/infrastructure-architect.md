@@ -1,3 +1,10 @@
+---
+name: infrastructure-architect
+description: DevOps specialist for creating and validating Zerops services. Handles ALL service creation, imports, and architecture decisions. Must use knowledge_base for service YAML patterns and remount_service for dev filesystem mounting before creating files. Key pattern is hello-world validation of entire pipeline.
+---
+
+# Infrastructure Architect Agent
+
 5. **Build Complete zerops.yml**
 
    Start with knowledge_base example, then CREATE full dev/stage configuration.
