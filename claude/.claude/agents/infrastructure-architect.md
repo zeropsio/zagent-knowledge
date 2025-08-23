@@ -113,19 +113,20 @@ services:
 """)
 ```
 
-### 4. Mount Dev Services and Initialize Git
+### 4. Mount New Dev Services and Initialize Git
 ```bash
-# After dev services show ACTIVE
+# After dev services show ACTIVE, mount their filesystems (NEW services only)
+# Services with startWithoutCode need initial filesystem mounting
 mcp__zerops__remount_service("webdev")
-mcp__zerops__remount_service("apidev")
+mcp__zerops__remount_service("apidev") 
 mcp__zerops__remount_service("workerdev")
 
 # Execute the returned mount commands via bash
-# Example: ssh webdev "mkdir -p /var/www && mount..."
+# Example: "mkdir -p /var/www/webdev && sshfs webdev:/var/www /var/www/webdev"
 
-# IMMEDIATELY after mounting, initialize git with proper .gitignore
+# IMMEDIATELY after mounting, initialize git ON THE REMOTE SERVICES
 ssh webdev "cd /var/www && git init"
-ssh apidev "cd /var/www && git init"
+ssh apidev "cd /var/www && git init" 
 ssh workerdev "cd /var/www && git init"
 ```
 
@@ -236,9 +237,8 @@ mcp__zerops__knowledge_base("nodejs")  # or python, go, php, ruby, rust, java, d
 **CRITICAL: Always create .gitignore FIRST before any other files**
 
 ```bash
-# Create .gitignore for Node.js services
-ssh webdev "cat > /var/www/.gitignore << 'EOF'
-node_modules/
+# Create .gitignore for Node.js services using Write tool
+Write("/var/www/webdev/.gitignore", content="""node_modules/
 .npm
 .env
 .env.local
@@ -252,10 +252,9 @@ build/
 *.log
 .vscode/
 .idea/
-EOF"
+""")
 
-ssh apidev "cat > /var/www/.gitignore << 'EOF'
-node_modules/
+Write("/var/www/apidev/.gitignore", content="""node_modules/
 .npm
 .env
 .env.local
@@ -267,13 +266,13 @@ yarn-error.log*
 .DS_Store
 .vscode/
 .idea/
-EOF"
+""")
 ```
 
 **Runtime-Specific .gitignore Examples:**
 ```bash
 # Python services
-ssh workerdev "cat > /var/www/.gitignore << 'EOF'
+Write("/var/www/workerdev/.gitignore", content="""
 __pycache__/
 *.py[cod]
 *$py.class
@@ -293,11 +292,10 @@ build/
 .DS_Store
 .vscode/
 .idea/
-EOF"
+""")
 
 # Go services  
-ssh apidev "cat > /var/www/.gitignore << 'EOF'
-*.exe
+Write("/var/www/apidev/.gitignore", content="""*.exe
 *.exe~
 *.dll
 *.so
@@ -309,7 +307,7 @@ vendor/
 .DS_Store
 .vscode/
 .idea/
-EOF"
+""")
 ```
 
 YOU must create all actual application files. Examples below use Node.js - adapt to your runtime:
@@ -443,17 +441,18 @@ ssh apidev "cd /var/www && zcli push --serviceId={APIDEV_ID} --setup=dev"
 # Wait for deployment completion before testing
 # Use BashOutput(bash_id="deployment_id") to monitor progress
 
-# After deployment completes, start dev servers in background
+# After deployment completes, start dev servers ON THE REMOTE SERVICES
+# CRITICAL: These run INSIDE the service containers, NOT locally
 ssh webdev "cd /var/www && npm run dev"
 # PARAMETER: run_in_background: true
-ssh apidev "cd /var/www && npm run dev"
+ssh apidev "cd /var/www && npm run dev"  
 # PARAMETER: run_in_background: true
 
 # Monitor dev server startup using BashOutput
-# Wait for "Server running" or similar startup message
-# Only then test connectivity
-curl http://webdev:5173
-curl http://apidev:3000/health
+# Wait for "Server running" or similar startup message from remote services
+# Only then test connectivity to the REMOTE services
+curl http://webdev:5173  # Tests the webdev service container
+curl http://apidev:3000/health  # Tests the apidev service container
 
 # ONLY deploy to stage after dev validation confirms hello-world works
 # Deploy to stage
@@ -552,6 +551,41 @@ deployFiles:
 3. **Add and commit files only after .gitignore exists**
 
 This prevents committing node_modules, .env files, and other sensitive/large files.
+
+**CRITICAL: Remote Service Execution vs Local File Editing**
+
+File editing uses mounted directories (always available):
+```bash
+# Service directories are ALREADY MOUNTED
+# /var/www/webdev/ - mounted from webdev service
+# /var/www/apidev/ - mounted from apidev service
+
+# Use Edit/Write/Read tools for file operations
+Write("/var/www/webdev/package.json", content="...")
+Edit("/var/www/apidev/index.js", old_string="...", new_string="...")
+```
+
+**ALL APPLICATION OPERATIONS MUST USE SSH TO REMOTE SERVICES:**
+```bash
+# ❌ WRONG - runs locally, not on service (would fail anyway)
+cd /var/www/webdev && npm run dev
+
+# ✅ CORRECT - runs on the actual service container  
+ssh webdev "cd /var/www && npm run dev"
+
+# ❌ WRONG - tests local mount (no server running locally)
+curl http://localhost:3000
+
+# ✅ CORRECT - tests remote service
+curl http://webdev:5173
+```
+
+**When to use remount_service():**
+- **NEW services with startWithoutCode** - Initial filesystem mounting required
+- **Broken filesystem access** - When `/var/www/service/` shows "Transport endpoint not connected"
+- **After network connectivity issues** - Refresh SSHFS connections
+- **After deploying new version** - Mount updated service filesystem
+- **After service restarts** - Re-establish filesystem connections
 
 **NEVER Enable Subdomains on Dev Services**
 Dev services are for internal development only. Subdomain access is ONLY for stage services after successful deployment. Attempting to enable subdomains on dev services will fail with "no http ports found" because dev services don't expose public ports during the `startWithoutCode` phase.

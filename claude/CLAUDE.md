@@ -18,10 +18,66 @@ mcp__zerops__discovery($projectId)  # Your source of truth
 4. NEVER guess service configuration - always use knowledge_base
 
 **FOR DEV SERVICE FILE CREATION:**
-1. `remount_service(service_name)` - Mount dev service filesystem
-2. Execute the returned mount commands via bash
-3. ONLY THEN create hello-world files in mounted directory
-4. NEVER create local files without proper MCP mounting
+1. Services already have persistent mounted directories at `/var/www/[service]/`
+2. Use Edit/Write/Read tools directly on these mounted paths
+3. Create hello-world files using native tools
+4. NEVER create local files without using mounted service directories
+
+## CRITICAL: Remote Service Execution Architecture
+
+**ALL agents must understand this fundamental distinction:**
+
+### Local Filesystem Mounts (Always Available)
+```bash
+# Service directories are ALREADY MOUNTED at startup
+# /var/www/apidev/ - mounted from apidev service
+# /var/www/webdev/ - mounted from webdev service  
+# /var/www/apistage/ - mounted from apistage service
+
+# Use Edit/Write/Read tools on these paths - NEVER vim/nano
+Edit("/var/www/apidev/package.json", old_string="...", new_string="...")
+Write("/var/www/webdev/src/app.js", content="...")
+Read("/var/www/apidev/zerops.yml")
+```
+
+### When to Use remount_service()
+**ONLY use when filesystem access is broken:**
+- When file system access fails
+- After network connectivity issues  
+- When getting file permission errors
+- To refresh SSHFS connections
+- After deploying a new version and need to work on it
+- After restarting any service
+
+```bash
+# Only when you see errors like:
+ls /var/www/apidev/ # "Transport endpoint not connected"
+# THEN use: mcp__zerops__remount_service("apidev")
+```
+
+### Remote Service Execution (All Operations)
+```bash
+# ALL application operations MUST use SSH to remote services
+# ✅ CORRECT - runs ON the service container
+ssh apidev "cd /var/www && npm install"
+ssh apidev "cd /var/www && npm run dev"
+ssh webdev "cd /var/www && npm run build"
+
+# ✅ CORRECT - tests the actual service
+curl http://apidev:3000
+curl http://webdev:5173
+
+# ❌ WRONG - runs locally, not on service
+cd /tmp/apidev && npm run dev
+curl http://localhost:3000
+```
+
+### Why This Matters
+- **Services run in isolated containers** with their own environments
+- **Environment variables** only exist on the service containers
+- **Network ports** are exposed from service containers, not locally
+- **Dependencies** are installed on service containers
+- **Local mounts** are just for convenient file editing
 
 ## Your Specialist Team
 
@@ -227,6 +283,9 @@ Common PM mistakes to avoid:
 - **Not initializing git immediately after mount (deployment fails)**
 - **Using shell & instead of run_in_background parameter (gets stuck)**
 - **Starting dev servers before deployment completes (fails silently)**
+- **Running dev servers locally instead of on remote service containers**
+- **Using vim/nano instead of native Edit/Write/Read tools**
+- **Running curl localhost instead of service hostnames**
 
 **INTERVENTION PROTOCOL:**
 If infrastructure-architect attempts forbidden actions:
