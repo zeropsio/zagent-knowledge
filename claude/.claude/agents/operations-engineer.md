@@ -463,19 +463,33 @@ for service in apidev workerdev webdev; do
 done
 ```
 
-### Build vs Runtime Variables
+### Build vs Runtime Variables - The Browser Rule
+
+**Remember: If a browser will call it, it needs a public URL.**
+
 ```yaml
-# Frontend needs API URL at BUILD time
+# Core principle: Browsers can't reach internal hostnames
+# This determines WHAT value to use (public vs internal)
+# Your framework determines WHERE to put it (build vs run)
+
+# Example for any frontend that browsers will access:
 build:
   envVariables:
-    # RUNTIME_ prefix is CRITICAL!
-    API_URL: ${RUNTIME_apistage_zeropsSubdomain}  # Adapt to framework convention
+    # Name it whatever your framework expects
+    API_URL: ${apistage_zeropsSubdomain}  # Public URL for browser access
 
-# Backend needs it at runtime
+# Backend service (only called internally):
 run:
   envVariables:
-    FRONTEND_URL: ${webstage_zeropsSubdomain}
+    DATABASE_URL: ${db_connectionString}  # Internal is fine
+    CACHE_HOST: ${cache_hostname}          # Internal is fine
+    FRONTEND_URL: ${webstage_zeropsSubdomain}  # Public if needed externally
 ```
+
+**The RUNTIME_ prefix:**
+- Only used when BUILD process needs a variable that exists at RUNTIME
+- Rare case - most frameworks handle this differently
+- Has nothing to do with the browser rule
 
 ### Service Communication Patterns
 ```yaml

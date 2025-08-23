@@ -324,11 +324,12 @@ Write("/var/www/webdev/index.html", content="""
 # Create src directory and main.js with PROPER API integration
 Write("/var/www/webdev/src/main.js", content="""
 // CRITICAL: Use environment variable for API URL, NEVER hardcode hostnames
-// Your framework will have its own pattern for accessing env vars:
-// - Some use process.env.YOUR_VAR
-// - Some use import.meta.env.YOUR_VAR  
-// - Check your framework's documentation
-const API_URL = process.env.API_URL || 'http://apidev:3000';  // Adapt to your framework
+// Framework-specific patterns for accessing build-time env vars:
+// - Vite: import.meta.env.VITE_API_URL
+// - Create React App: process.env.REACT_APP_API_URL  
+// - Next.js: process.env.NEXT_PUBLIC_API_URL
+// These are replaced at BUILD time with actual values
+const API_URL = import.meta.env.VITE_API_URL || 'http://apidev:3000';  // Example for Vite
 
 console.log('App initialized');
 console.log('API URL:', API_URL);
@@ -580,11 +581,12 @@ echo "✅ Infrastructure validated - stage tested via public URLs - ready for ha
 - Missing these causes deployment failures and missing source code
 
 **🚨 STAGE API URLS - #2 FAILURE CAUSE**
-- **NEVER USE** internal hostnames for stage frontend env vars
+- **CORE RULE**: Browsers can't reach internal hostnames - EVER
 - **WRONG**: `API_URL: http://apistage:3000` (browsers can't reach!)
-- **CORRECT**: `API_URL: ${RUNTIME_apistage_zeropsSubdomain}` (or whatever your app expects)
-- Stage frontends MUST use public URLs for API access
-- The env var name (API_URL, BACKEND_URL, etc.) depends on what your application code expects
+- **CORRECT**: `API_URL: ${apistage_zeropsSubdomain}` (public URL)
+- This applies to ANY client-side code: React, Vue, Angular, vanilla JS, mobile apps
+- Where you put the variable (build vs run) depends on your framework
+- The principle never changes: browsers need public URLs
 
 **🚨 ZEROPS.YML HALLUCINATION - #3 FAILURE CAUSE**
 - **NEVER CREATE** zerops.yml without knowledge_base lookup first

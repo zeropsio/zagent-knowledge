@@ -175,6 +175,14 @@ run:
 - **Sensitive secrets**: Use MCP (avoid redeployments)
 - **Build-time vars**: Must be in zerops.yml
 
+**🚨 STATIC vs SSR Environment Variables:**
+- **Static sites (CSR)**: Variables go in `build.envVariables` - NO RUNTIME_ prefix!
+  - They're baked into the JS bundle at build time
+  - Example: `VITE_API_URL: ${apistage_zeropsSubdomain}`
+- **SSR sites**: Variables can go in `run.envVariables`
+  - They're available at runtime on the server
+  - Use RUNTIME_ prefix only when build needs runtime vars
+
 ### Critical Restart Pattern:
 **When service A needs a new variable from service B:**
 1. Set variable on service B (source)
@@ -210,27 +218,35 @@ run:
     REDIS_URL: ${cache_hostname}
 ```
 
-**Rule 2: Stage Services MUST Use Public URLs**
-```yaml
-# ❌ WRONG - Internal hostname for stage frontend
-build:
-  envVariables:
-    API_URL: http://apistage:3000  # Frontend can't reach!
+**Rule 2: The Universal Browser Rule**
 
-# ✅ CORRECT - Public URL for stage
-build:
-  envVariables:
-    # Use zeropsSubdomain for ANY public-facing URL needs
-    # Name the env var whatever your app code expects (API_URL, BACKEND_URL, etc.)
-    API_URL: ${RUNTIME_apistage_zeropsSubdomain}
-    # Your app code would access this as process.env.API_URL or import.meta.env.API_URL
+**🔑 CORE PRINCIPLE: Browsers cannot reach internal service hostnames.**
+
+Any URL that will be called from:
+- A browser (Chrome, Firefox, Safari, etc.)
+- A mobile app
+- Any external client
+- Postman/Insomnia on your local machine
+
+...MUST use the public `zeropsSubdomain` URL, not internal hostnames.
+
+```yaml
+# ❌ WRONG - Browser can't reach internal hostname
+API_URL: http://apistage:3000  # Fails from any browser!
+
+# ✅ CORRECT - Use public URL for anything browser-accessible
+API_URL: ${apistage_zeropsSubdomain}  # Works from anywhere
+
+# The variable name (API_URL, BACKEND_URL, etc.) and where you put it 
+# (build.envVariables or run.envVariables) depends on your framework.
+# The principle remains: browsers need public URLs.
 ```
 
-**CRITICAL: Stage Testing Requirements**
-1. **Stage frontends CANNOT use internal hostnames** - browsers can't reach them
-2. **Stage APIs MUST be accessible via public URLs** for frontend access
-3. **ALL stage testing MUST use preview URLs** - not internal service names
-4. **Test flow**: Enable preview → Get zeropsSubdomain → Test via public URL
+**Why this matters:**
+- Internal hostnames (apidev, apistage) only work INSIDE the Zerops network
+- Browsers run on users' machines OUTSIDE the network
+- Public URLs (zeropsSubdomain) are accessible from anywhere
+- This applies to ALL frameworks, ALL architectures, ALL apps
 
 **Rule 3: Never Hardcode in Application Code**
 ```javascript
