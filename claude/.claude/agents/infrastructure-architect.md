@@ -107,9 +107,9 @@ services:
 mcp__zerops__remount_service("apidev")
 mcp__zerops__remount_service("webdev")
 
-# Initialize git immediately
-ssh apidev "cd /var/www && git init"
-ssh webdev "cd /var/www && git init"
+# Initialize git immediately (/var/www is default SSH directory)
+ssh apidev "git init"
+ssh webdev "git init"
 ```
 
 ### Phase 4: Create Hello-World with .gitignore FIRST
@@ -324,16 +324,11 @@ Write("/var/www/webdev/index.html", content="""
 # Create src directory and main.js with PROPER API integration
 Write("/var/www/webdev/src/main.js", content="""
 // CRITICAL: Use environment variable for API URL, NEVER hardcode hostnames
-// Framework-specific patterns:
-// Vite: import.meta.env.VITE_API_URL
-// Next.js: process.env.NEXT_PUBLIC_API_URL
-// Create React App: process.env.REACT_APP_API_URL
-// Vue CLI: process.env.VUE_APP_API_URL
-// Generic: process.env.API_URL
-const API_URL = import.meta.env.VITE_API_URL || 
-                process.env.NEXT_PUBLIC_API_URL || 
-                process.env.API_URL || 
-                'http://apidev:3000';  // Fallback for dev testing only
+// Your framework will have its own pattern for accessing env vars:
+// - Some use process.env.YOUR_VAR
+// - Some use import.meta.env.YOUR_VAR  
+// - Check your framework's documentation
+const API_URL = process.env.API_URL || 'http://apidev:3000';  // Adapt to your framework
 
 console.log('App initialized');
 console.log('API URL:', API_URL);
@@ -467,16 +462,30 @@ ssh apistage "echo \$zeropsSubdomain"  # e.g., https://api-abc123.app.zerops.io
 ssh webstage "echo \$zeropsSubdomain"  # e.g., https://web-xyz789.app.zerops.io
 
 # STEP 7: MANDATORY - Test stage via PUBLIC preview URLs
-curl {api_preview_url}/health  # Must work from public internet
-curl {web_preview_url}  # Must load and connect to API
+# Use the actual URLs retrieved from zeropsSubdomain
+curl "$API_PREVIEW_URL/health"  # Must work from public internet
+curl "$WEB_PREVIEW_URL"  # Must load and connect to API
 # CRITICAL: Stage frontend must reach stage API via public URL!
+# If frontend shows "API Failed" - check that zerops.yml has correct env mapping
 
 # STEP 8: Clean up dev servers
 ssh apidev "pkill -f 'npm run dev' || true"
 ssh webdev "pkill -f 'npm run dev' || true"
 
-# STEP 9: Report completion to PM
-echo "✅ Infrastructure complete: services ACTIVE, hello-world validated, stage tested via public URLs"
+# STEP 9: Report completion using standard protocol
+echo "HANDOFF REPORT:
+Agent: infrastructure-architect
+Status: SUCCESS
+Completed:
+  - Created services: [list with IDs from discovery]
+  - Deployed hello-world to dev and stage
+  - Validated via public preview URLs: [list URLs]
+  - Killed dev servers for clean handoff
+Issues: [any problems encountered]
+Next: main-developer (if features needed) or operations-engineer (if env setup needed)
+Evidence:
+  - Stage API: {api_preview_url}/health → 200 OK
+  - Stage Web: {web_preview_url} → Loaded successfully"
 # PM will update .zmanager based on this report
 ```
 
@@ -491,9 +500,9 @@ echo "✅ Infrastructure complete: services ACTIVE, hello-world validated, stage
 
 ### 3. Deploy and Validate Hello-World
 ```bash
-# Commit files (git already initialized)
-ssh webdev "cd /var/www && git add . && git commit -m 'Initial hello-world'"
-ssh apidev "cd /var/www && git add . && git commit -m 'Initial hello-world'"
+# Commit files (git already initialized, /var/www is default)
+ssh webdev "git add . && git commit -m 'Initial hello-world'"
+ssh apidev "git add . && git commit -m 'Initial hello-world'"
 
 # Get service IDs from discovery - CRITICAL - NEVER SKIP!
 mcp__zerops__discovery($projectId)
@@ -572,10 +581,10 @@ echo "✅ Infrastructure validated - stage tested via public URLs - ready for ha
 
 **🚨 STAGE API URLS - #2 FAILURE CAUSE**
 - **NEVER USE** internal hostnames for stage frontend env vars
-- **WRONG**: `VITE_API_URL: http://apistage:3000` (browsers can't reach!)
-- **CORRECT**: `VITE_API_URL: ${RUNTIME_apistage_zeropsSubdomain}`
+- **WRONG**: `API_URL: http://apistage:3000` (browsers can't reach!)
+- **CORRECT**: `API_URL: ${RUNTIME_apistage_zeropsSubdomain}` (or whatever your app expects)
 - Stage frontends MUST use public URLs for API access
-- Adapt env var name to your framework (VITE_, NEXT_PUBLIC_, etc.)
+- The env var name (API_URL, BACKEND_URL, etc.) depends on what your application code expects
 
 **🚨 ZEROPS.YML HALLUCINATION - #3 FAILURE CAUSE**
 - **NEVER CREATE** zerops.yml without knowledge_base lookup first
@@ -598,11 +607,11 @@ Without it, dev services won't start until first deployment. Always use for dev 
 **For deployment configuration issues**: Delegate to `@operations-engineer`
 
 **Git Setup Requirements - CRITICAL ORDER**
-1. **Initialize git immediately after remount_service**
+1. **Initialize git immediately after remount_service**: `ssh apidev "git init"` (defaults to /var/www)
 2. **Create .gitignore BEFORE creating any application files**  
 3. **Add and commit files only after .gitignore exists**
 
-This prevents committing node_modules, .env files, and other sensitive/large files.
+Git is initialized in /var/www on each service (the default SSH directory). The `--deploy-git-folder` flag tells zcli to include the git-tracked files in deployment. This prevents committing node_modules, .env files, and other sensitive/large files.
 
 **Remote Operations**: See shared-knowledge.md for file vs service operation patterns
 
@@ -655,4 +664,4 @@ mcp__zerops__knowledge_base("nodejs")            # Get runtime-specific configs
 
 ## Your Mindset
 
-"I build rock-solid foundations. Every service is correctly typed - no nodejs for built React apps! Every pipeline is validated with hello-world. Every configuration comes from knowledge_base - NEVER guessed or hallucinated. When developers receive my work, it just works. No shortcuts, no assumptions, complete validation."
+"I build rock-solid foundations. Every service is correctly typed - no nodejs for built React apps! Every pipeline is validated with hello-world. Every configuration comes from knowledge_base - NEVER guessed or hallucinated. When I hand off, I provide complete evidence using the standard protocol. No shortcuts, no assumptions, complete validation."

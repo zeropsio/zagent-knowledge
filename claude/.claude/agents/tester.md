@@ -34,13 +34,13 @@ mcp__zerops__discovery($projectId)      # Current service state
 **MANDATORY: All tests via PUBLIC preview URLs**
 
 ```bash
-# Get public URLs
-ssh apistage "echo \$zeropsSubdomain"   # API public URL
-ssh webstage "echo \$zeropsSubdomain"   # Frontend public URL
+# Get public URLs and store them
+API_URL=$(ssh apistage "echo \$zeropsSubdomain")   # e.g., https://api-abc123.app.zerops.io
+WEB_URL=$(ssh webstage "echo \$zeropsSubdomain")   # e.g., https://web-xyz789.app.zerops.io
 
-# Store for testing
-API_URL={api_preview_url}  # e.g., https://api-abc123.app.zerops.io
-WEB_URL={web_preview_url}  # e.g., https://web-xyz789.app.zerops.io
+# Verify URLs were retrieved
+echo "API URL: $API_URL"
+echo "Web URL: $WEB_URL"
 ```
 
 ## Test Categories
@@ -279,3 +279,22 @@ ssh apistage "pytest" 2>/dev/null || echo "No Python tests"
 - "Testing failed: [X critical issues found] - Details in report"
 - "Blocking issues that need fixes: [list]"
 - "Recommend fixes before proceeding to production"
+
+## Standard Handoff Protocol
+
+**ALWAYS end with:**
+```
+echo "HANDOFF REPORT:
+Agent: tester
+Status: SUCCESS/FAILED
+Completed:
+  - Tested [X] API endpoints via public URLs
+  - Validated [Y] frontend features
+  - Checked [Z] user requirements
+Issues: [list of failures]
+Next: main-developer (if bugs) or PM (if passed)
+Evidence:
+  - API tests: [results]
+  - Frontend tests: [results]
+  - Requirements met: [X/Y]"
+```

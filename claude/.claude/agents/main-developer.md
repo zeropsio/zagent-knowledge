@@ -431,28 +431,23 @@ ssh apidev "npm run dev"
 # PARAMETER: run_in_background: true
 ```
 
-## Recovery Protocol - When You Get Lost
+## Recovery Protocol
 
-**If you lose track of what you're doing:**
+**See shared-knowledge.md for standard recovery protocol**
+
+Additional main-developer specific checks:
 ```bash
-# 1. Check project state (READ ONLY)
-Read(".zmanager/state.md")
+# Check your todo list status
+# Review what features were being implemented
+# Verify dev servers are running
+ssh apidev "ps aux | grep -E '(node|npm)'"
+ssh webdev "ps aux | grep -E '(node|npm)'"
 
-# 2. Check actual deployment state
-mcp__zerops__discovery($projectId)
-
-# 3. Check what's implemented
-for service in [apidev, webdev]:
-  Read("/var/www/{service}/package.json")  # Dependencies added?
-  ls /var/www/{service}/src/  # What files exist?
-  ssh {service} "git log --oneline -5"  # What commits made?
-
-# 4. Check running processes
-for service in [apidev, webdev]:
-  ssh {service} "ps aux | grep -E '(node|npm)'"
-
-# 5. Review todo list and resume
-TodoWrite(update_based_on_actual_state)
+# If dev servers not running, restart them
+ssh apidev "npm run dev"
+# PARAMETER: run_in_background: true
+ssh webdev "npm run dev"  
+# PARAMETER: run_in_background: true
 ```
 
 ## Root Cause Analysis - Before Giving Up
@@ -496,12 +491,12 @@ mcp__zerops__enable_preview_subdomain(apistageId)
 mcp__zerops__enable_preview_subdomain(webstageId)
 
 # Get public URLs
-ssh apistage "echo \$zeropsSubdomain"  # e.g., https://api-abc.app.zerops.io
-ssh webstage "echo \$zeropsSubdomain"  # e.g., https://web-xyz.app.zerops.io
+API_URL=$(ssh apistage "echo \$zeropsSubdomain")  # e.g., https://api-abc.app.zerops.io
+WEB_URL=$(ssh webstage "echo \$zeropsSubdomain")  # e.g., https://web-xyz.app.zerops.io
 
 # Test from public internet
-curl {api_preview_url}/health  # MUST work publicly
-curl {web_preview_url}  # MUST load and connect to API
+curl "$API_URL/health"  # MUST work publicly
+curl "$WEB_URL"  # MUST load and connect to API
 
 # Report to PM (who will update tracking)
 echo "✅ Stage testing complete: [results]"  # PM updates .zmanager
@@ -544,7 +539,21 @@ echo "✅ Stage testing complete: [results]"  # PM updates .zmanager
 - "Deployed to stage, endpoints verified"
 - "Frontend deployed, no console errors, preview URL enabled"
 
-### When Complete
-- "Feature complete: developed, tested, deployed to stage, verified working via public preview URLs"
-- "Implemented features: [list matching user requirements]"
-- PM will update .zmanager based on this report
+### When Complete - Use Standard Handoff
+```
+echo "HANDOFF REPORT:
+Agent: main-developer
+Status: SUCCESS
+Completed:
+  - Implemented features: [list from requirements]
+  - Tested on dev: [endpoints/pages working]
+  - Deployed to stage with proper flags
+  - Verified via public URLs: [list URLs]
+Issues: [any problems encountered]
+Next: tester (for validation) or PM decision
+Evidence:
+  - Files modified: [list]
+  - Stage URLs: [working URLs]
+  - Tests passed: [what was tested]"
+```
+PM will update .zmanager based on this report
