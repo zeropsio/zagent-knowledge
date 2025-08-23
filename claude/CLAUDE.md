@@ -223,6 +223,10 @@ Common PM mistakes to avoid:
 - Skipping proper filesystem mounting steps
 - Using type discovery instead of knowledge_base patterns
 - Direct filesystem operations without executing mount commands
+- **Creating application files before .gitignore (commits node_modules!)**
+- **Not initializing git immediately after mount (deployment fails)**
+- **Using shell & instead of run_in_background parameter (gets stuck)**
+- **Starting dev servers before deployment completes (fails silently)**
 
 **INTERVENTION PROTOCOL:**
 If infrastructure-architect attempts forbidden actions:

@@ -113,12 +113,20 @@ services:
 """)
 ```
 
-### 4. Mount Dev Services Only
+### 4. Mount Dev Services and Initialize Git
 ```bash
 # After dev services show ACTIVE
 mcp__zerops__remount_service("webdev")
 mcp__zerops__remount_service("apidev")
 mcp__zerops__remount_service("workerdev")
+
+# Execute the returned mount commands via bash
+# Example: ssh webdev "mkdir -p /var/www && mount..."
+
+# IMMEDIATELY after mounting, initialize git with proper .gitignore
+ssh webdev "cd /var/www && git init"
+ssh apidev "cd /var/www && git init"
+ssh workerdev "cd /var/www && git init"
 ```
 
 ## Hello-World Validation - MANDATORY
@@ -128,6 +136,20 @@ mcp__zerops__remount_service("workerdev")
 - Catches configuration errors early
 - Ensures all env vars are defined
 - Tests both dev and stage paths
+
+### CRITICAL: Validation Order - NEVER DEVIATE
+1. **Deploy to dev services** (with background monitoring)
+2. **Start dev servers** (with background monitoring) 
+3. **Test dev connectivity** (curl requests) - **VALIDATE HELLO-WORLD WORKS**
+4. **ONLY after dev validation passes - Deploy to stage services** (with background monitoring)
+5. **Test stage connectivity** (curl requests)
+6. **Enable stage preview URLs** (public access)
+7. **Test preview URLs** (final validation)
+
+**NEVER start dev servers before deployment completes**
+**NEVER test connectivity before servers are running**
+**NEVER deploy to stage before dev validation passes**
+**NEVER enable preview URLs on dev services**
 
 ### Background Process Requirements - CRITICAL
 
@@ -159,6 +181,31 @@ ssh apidev "zcli push --serviceId=123 --setup=dev"
 
 **Monitoring requirement:** Always use `BashOutput` tool to monitor background processes and ensure completion before proceeding.
 
+**Process monitoring workflow:**
+```bash
+# 1. Start background deployment
+ssh apidev "zcli push --serviceId=123 --setup=dev" 
+# PARAMETER: run_in_background: true
+# Returns: {"bash_id": "abc123", "output": "..."}
+
+# 2. Monitor completion using bash_id from previous command
+BashOutput(bash_id="abc123")  # Check deployment progress
+# Repeat until you see "Deploy successful" or similar completion message
+
+# 3. Start dev server ONLY after deployment completes
+ssh apidev "cd /var/www && npm run dev"
+# PARAMETER: run_in_background: true
+# Returns: {"bash_id": "def456", "output": "..."}
+
+# 4. Monitor dev server startup
+BashOutput(bash_id="def456")  # Wait for "Server running on port 3000"
+
+# 5. Only then test connectivity
+curl http://apidev:3000/health
+```
+
+**NEVER use shell `&` for background processes - always use run_in_background parameter**
+
 ## Process Workflow
 
 ### 1. Get Configuration Patterns
@@ -185,6 +232,85 @@ mcp__zerops__knowledge_base("nodejs")  # or python, go, php, ruby, rust, java, d
 - Any actual implementation
 
 ### 3. Create Application Files
+
+**CRITICAL: Always create .gitignore FIRST before any other files**
+
+```bash
+# Create .gitignore for Node.js services
+ssh webdev "cat > /var/www/.gitignore << 'EOF'
+node_modules/
+.npm
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+dist/
+build/
+.DS_Store
+*.log
+.vscode/
+.idea/
+EOF"
+
+ssh apidev "cat > /var/www/.gitignore << 'EOF'
+node_modules/
+.npm
+.env
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+.DS_Store
+.vscode/
+.idea/
+EOF"
+```
+
+**Runtime-Specific .gitignore Examples:**
+```bash
+# Python services
+ssh workerdev "cat > /var/www/.gitignore << 'EOF'
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+.DS_Store
+.vscode/
+.idea/
+EOF"
+
+# Go services  
+ssh apidev "cat > /var/www/.gitignore << 'EOF'
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+vendor/
+.DS_Store
+.vscode/
+.idea/
+EOF"
+```
 
 YOU must create all actual application files. Examples below use Node.js - adapt to your runtime:
 
@@ -250,8 +376,8 @@ app.get('/health', (req, res) => {
   res.json({
     status: 'ok',
     service: process.env.hostname,
-    database: process.env.db_hostname ? 'configured' : 'missing',
-    cache: process.env.cache_hostname ? 'configured' : 'missing',
+    database: process.env.DATABASE_URL ? 'configured' : 'missing',
+    cache: process.env.REDIS_HOST ? 'configured' : 'missing',
     hasApiKey: !!process.env.API_KEY
   });
 });
@@ -260,6 +386,37 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
 ```
+
+**CRITICAL: Environment Variable Mapping**
+
+When creating zerops.yml files, NEVER use the same key name for both sides:
+
+```yaml
+# ❌ WRONG - This doesn't work
+run:
+  envVariables:
+    db_hostname: ${db_hostname}        # Same key name - FAILS
+    db_connectionString: ${db_connectionString}  # Same key name - FAILS
+
+# ✅ CORRECT - Map to application env var names
+run:
+  envVariables:
+    DATABASE_URL: ${db_connectionString}    # Maps to standard app env
+    DB_HOST: ${db_hostname}                 # Maps to standard app env
+    DB_PORT: ${db_port}                     # Maps to standard app env
+    DB_USER: ${db_user}                     # Maps to standard app env
+    DB_PASSWORD: ${db_password}             # Maps to standard app env
+    REDIS_HOST: ${cache_hostname}           # Maps to standard app env
+    REDIS_PORT: ${cache_port}               # Maps to standard app env
+    S3_ACCESS_KEY: ${storage_accessKeyId}   # Maps to standard app env
+    S3_SECRET_KEY: ${storage_secretAccessKey} # Maps to standard app env
+```
+
+**Standard Application Environment Variable Names:**
+- Database: `DATABASE_URL`, `DB_HOST`, `DB_PORT`, `DB_USER`, `DB_PASSWORD`
+- Cache: `REDIS_HOST`, `REDIS_PORT`, `REDIS_URL`
+- Storage: `S3_ACCESS_KEY`, `S3_SECRET_KEY`, `S3_BUCKET`, `S3_ENDPOINT`
+- API Keys: `API_KEY`, `JWT_SECRET`, `STRIPE_KEY`
 
 **Runtime Adaptation Examples:**
 ```python
@@ -272,27 +429,45 @@ app.listen(PORT, '0.0.0.0', () => {
 
 ### 4. Deploy and Validate
 ```bash
-# Initialize git (required first time)
-ssh webdev "git init && git add . && git commit -m 'Initial'"
-ssh apidev "git init && git add . && git commit -m 'Initial'"
+# Git is already initialized from step 4, just add and commit
+ssh webdev "cd /var/www && git add . && git commit -m 'Initial hello-world app'"
+ssh apidev "cd /var/www && git add . && git commit -m 'Initial hello-world app'"
 
 # Deploy to dev
-ssh webdev "zcli push --serviceId={WEBDEV_ID} --setup=dev"
+ssh webdev "cd /var/www && zcli push --serviceId={WEBDEV_ID} --setup=dev"
 # PARAMETER: run_in_background: true
-ssh apidev "zcli push --serviceId={APIDEV_ID} --setup=dev"
+ssh apidev "cd /var/www && zcli push --serviceId={APIDEV_ID} --setup=dev"
 # PARAMETER: run_in_background: true
 
-# Verify dev
+# CRITICAL: Monitor dev deployments using BashOutput tool
+# Wait for deployment completion before testing
+# Use BashOutput(bash_id="deployment_id") to monitor progress
+
+# After deployment completes, start dev servers in background
+ssh webdev "cd /var/www && npm run dev"
+# PARAMETER: run_in_background: true
+ssh apidev "cd /var/www && npm run dev"
+# PARAMETER: run_in_background: true
+
+# Monitor dev server startup using BashOutput
+# Wait for "Server running" or similar startup message
+# Only then test connectivity
 curl http://webdev:5173
-curl http://apidev:3000
+curl http://apidev:3000/health
 
+# ONLY deploy to stage after dev validation confirms hello-world works
 # Deploy to stage
-ssh webdev "zcli push --serviceId={WEBSTAGE_ID} --setup=prod"
+ssh webstage "cd /var/www && zcli push --serviceId={WEBSTAGE_ID} --setup=prod"
 # PARAMETER: run_in_background: true
-ssh apidev "zcli push --serviceId={APISTAGE_ID} --setup=prod"
+ssh apistage "cd /var/www && zcli push --serviceId={APISTAGE_ID} --setup=prod"
 # PARAMETER: run_in_background: true
 
-# Enable preview URLs for final validation
+# Monitor stage deployments using BashOutput until completion
+# Test stage connectivity (no need to start servers - stage runs automatically)
+curl http://webstage:3000
+curl http://apistage:3000/health
+
+# Enable preview URLs for final validation (stage services only)
 mcp__zerops__enable_preview_subdomain(webstageId)
 mcp__zerops__enable_preview_subdomain(apistageId)
 
@@ -371,8 +546,15 @@ deployFiles:
   - server.js
 ```
 
-**Git Init Requirement**
-First deployment to ANY service needs git initialization.
+**Git Setup Requirements - CRITICAL ORDER**
+1. **Initialize git immediately after remount_service**
+2. **Create .gitignore BEFORE creating any application files**  
+3. **Add and commit files only after .gitignore exists**
+
+This prevents committing node_modules, .env files, and other sensitive/large files.
+
+**NEVER Enable Subdomains on Dev Services**
+Dev services are for internal development only. Subdomain access is ONLY for stage services after successful deployment. Attempting to enable subdomains on dev services will fail with "no http ports found" because dev services don't expose public ports during the `startWithoutCode` phase.
 
 ## Communication Style
 
