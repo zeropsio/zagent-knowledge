@@ -324,11 +324,16 @@ Write("/var/www/webdev/index.html", content="""
 # Create src directory and main.js with PROPER API integration
 Write("/var/www/webdev/src/main.js", content="""
 // CRITICAL: Use environment variable for API URL, NEVER hardcode hostnames
-// Use your framework's env variable pattern
-const API_URL = process.env.API_URL || 'http://apidev:3000';
-if (!API_URL) {
-  console.error('API URL not configured - set appropriate env var for your framework');
-}
+// Framework-specific patterns:
+// Vite: import.meta.env.VITE_API_URL
+// Next.js: process.env.NEXT_PUBLIC_API_URL
+// Create React App: process.env.REACT_APP_API_URL
+// Vue CLI: process.env.VUE_APP_API_URL
+// Generic: process.env.API_URL
+const API_URL = import.meta.env.VITE_API_URL || 
+                process.env.NEXT_PUBLIC_API_URL || 
+                process.env.API_URL || 
+                'http://apidev:3000';  // Fallback for dev testing only
 
 console.log('App initialized');
 console.log('API URL:', API_URL);
@@ -415,15 +420,65 @@ mcp__zerops__knowledge_base("nodejs")  # Returns zerops.yml patterns
 
 ### 4. Complete Validation Workflow
 
-**MANDATORY SEQUENCE:**
-1. Deploy to dev with env vars configured
-2. Start dev servers and test connectivity
-3. Verify frontend → backend → database flow works
-4. Deploy to stage 
-5. Enable preview URLs on stage services
-6. Test stage deployment via preview URLs
-7. Clean up dev servers
-8. Report completion to PM for main-developer handoff
+**MANDATORY SEQUENCE WITH PROPER FLAGS:**
+
+```bash
+# STEP 1: Get service IDs from discovery - NEVER skip this!
+mcp__zerops__discovery($projectId)
+# Note exact service IDs - CRITICAL for deployment
+
+# STEP 2: Deploy to dev with MANDATORY flags
+ssh apidev "zcli push --serviceId={EXACT_APIDEV_ID} --setup=dev --deploy-git-folder"
+# PARAMETER: run_in_background: true
+BashOutput(bash_id="api_deploy")  # Monitor deployment
+
+ssh webdev "zcli push --serviceId={EXACT_WEBDEV_ID} --setup=dev --deploy-git-folder"
+# PARAMETER: run_in_background: true
+BashOutput(bash_id="web_deploy")  # Monitor deployment
+
+# STEP 3: Start dev servers separately
+ssh apidev "npm install"  # Install deps first
+ssh apidev "npm run dev"  # Then start server
+# PARAMETER: run_in_background: true
+BashOutput(bash_id="api_server")  # Wait for "Server running"
+
+ssh webdev "npm install"
+ssh webdev "npm run dev"
+# PARAMETER: run_in_background: true
+BashOutput(bash_id="web_server")  # Wait for dev server ready
+
+# STEP 4: Test dev connectivity
+curl http://apidev:3000/health  # API must respond
+curl http://webdev:5173  # Frontend must load
+
+# STEP 5: Deploy to stage (NO --deploy-git-folder for stage!)
+ssh apistage "zcli push --serviceId={EXACT_APISTAGE_ID} --setup=stage"
+# PARAMETER: run_in_background: true
+BashOutput(bash_id="api_stage_deploy")
+
+ssh webstage "zcli push --serviceId={EXACT_WEBSTAGE_ID} --setup=stage"
+# PARAMETER: run_in_background: true
+BashOutput(bash_id="web_stage_deploy")
+
+# STEP 6: Enable preview URLs and get public URLs
+mcp__zerops__enable_preview_subdomain(apistageId)
+mcp__zerops__enable_preview_subdomain(webstageId)
+ssh apistage "echo \$zeropsSubdomain"  # e.g., https://api-abc123.app.zerops.io
+ssh webstage "echo \$zeropsSubdomain"  # e.g., https://web-xyz789.app.zerops.io
+
+# STEP 7: MANDATORY - Test stage via PUBLIC preview URLs
+curl {api_preview_url}/health  # Must work from public internet
+curl {web_preview_url}  # Must load and connect to API
+# CRITICAL: Stage frontend must reach stage API via public URL!
+
+# STEP 8: Clean up dev servers
+ssh apidev "pkill -f 'npm run dev' || true"
+ssh webdev "pkill -f 'npm run dev' || true"
+
+# STEP 9: Report completion to PM
+echo "✅ Infrastructure complete: services ACTIVE, hello-world validated, stage tested via public URLs"
+# PM will update .zmanager based on this report
+```
 
 **Runtime Adaptation Examples:**
 ```python
@@ -440,14 +495,21 @@ mcp__zerops__knowledge_base("nodejs")  # Returns zerops.yml patterns
 ssh webdev "cd /var/www && git add . && git commit -m 'Initial hello-world'"
 ssh apidev "cd /var/www && git add . && git commit -m 'Initial hello-world'"
 
-# Deploy dev → test → deploy stage → test → enable preview URLs
-# Follow validation workflow order (see validation workflow above)
-# Use run_in_background for all deployments and dev servers
+# Get service IDs from discovery - CRITICAL - NEVER SKIP!
+mcp__zerops__discovery($projectId)
 
-# CRITICAL: Clean up dev servers after validation  
-ssh webdev "pkill -f 'npm run dev' || true"
-ssh apidev "pkill -f 'npm run dev' || true"
-echo "✅ Infrastructure validated - ready for main-developer"
+# Deploy with MANDATORY flags
+# DEV: Must include --serviceId AND --deploy-git-folder
+ssh apidev "zcli push --serviceId={EXACT_ID_FROM_DISCOVERY} --setup=dev --deploy-git-folder"
+# PARAMETER: run_in_background: true
+
+# STAGE: Must include --serviceId, NO --deploy-git-folder
+ssh apistage "zcli push --serviceId={EXACT_ID_FROM_DISCOVERY} --setup=stage"
+# PARAMETER: run_in_background: true
+
+# Follow complete validation workflow (see section 4 above)
+# CRITICAL: Test stage via PUBLIC preview URLs - not internal!
+echo "✅ Infrastructure validated - stage tested via public URLs - ready for handoff"
 ```
 
 **For detailed deployment troubleshooting**: `@operations-engineer`
@@ -501,18 +563,28 @@ echo "✅ Infrastructure validated - ready for main-developer"
 
 ### Common Pitfalls
 
-**🚨 ZEROPS.YML HALLUCINATION - #1 FAILURE CAUSE**
-- **NEVER CREATE** zerops.yml files without knowledge_base lookup
-- **NEVER CREATE** multiple zerops.yml files (zerops-stage.yml, etc.) - ONE file per service only  
-- **NEVER GUESS** service configurations (`run:`, `base:`, `ports:`, `envVariables:`)
-- **ALWAYS USE** `knowledge_base('service_import')` FIRST
-- Violating this causes 95% of deployment failures and misconfigurations
+**🚨 DEPLOYMENT FLAGS - #1 FAILURE CAUSE**
+- **NEVER OMIT** `--serviceId` from zcli push commands
+- **ALWAYS GET** serviceId from `discovery()` - NEVER guess or skip
+- **DEV NEEDS** both `--serviceId` AND `--deploy-git-folder`
+- **STAGE NEEDS** only `--serviceId` (no --deploy-git-folder)
+- Missing these causes deployment failures and missing source code
 
-**🚨 HARDCODED HOSTNAMES - #2 FAILURE CAUSE**
-- **NEVER HARDCODE** service hostnames in application code (`http://apidev:3000`)
-- **ALWAYS USE** environment variables for service URLs (follow framework conventions)
-- **MUST CONFIGURE** proper zerops.yml environment variable mappings
-- **VALIDATE** that hello-world frontend can actually reach backend via env vars
+**🚨 STAGE API URLS - #2 FAILURE CAUSE**
+- **NEVER USE** internal hostnames for stage frontend env vars
+- **WRONG**: `VITE_API_URL: http://apistage:3000` (browsers can't reach!)
+- **CORRECT**: `VITE_API_URL: ${RUNTIME_apistage_zeropsSubdomain}`
+- Stage frontends MUST use public URLs for API access
+- Adapt env var name to your framework (VITE_, NEXT_PUBLIC_, etc.)
+
+**🚨 ZEROPS.YML HALLUCINATION - #3 FAILURE CAUSE**
+- **NEVER CREATE** zerops.yml without knowledge_base lookup first
+- **NEVER CREATE** multiple files (zerops-stage.yml, etc.) - ONE file only
+- **ALWAYS USE** `knowledge_base('service_import')` FIRST
+
+**🚨 HARDCODED HOSTNAMES - #4 FAILURE CAUSE**
+- **NEVER HARDCODE** service hostnames in application code
+- **ALWAYS USE** environment variables for service URLs
 
 **startWithoutCode is Essential**
 Without it, dev services won't start until first deployment. Always use for dev services.

@@ -34,12 +34,18 @@ curl http://localhost:3000         # No server running locally
 ```
 
 ### When to Use remount_service()
-**Required in these scenarios:**
+**ONLY use in these specific scenarios:**
 - **NEW services with startWithoutCode** - Initial filesystem mounting required
+- **After successful deployment to dev** - Mount updated filesystem (NOT stage)
 - **Broken filesystem access** - "Transport endpoint not connected" errors
-- **After network connectivity issues** - Refresh SSHFS connections
-- **After service restarts** - Re-establish filesystem connections
-- **After deploying new version** - Mount updated service filesystem
+- **PM initial check** - If discovery shows ACTIVE dev but /var/www/{service}/ empty
+
+**DO NOT use for:**
+- Regular file operations
+- Before every deployment
+- As a "just in case" measure
+- Stage services (they don't have mounts)
+- When files are already accessible
 
 ```bash
 # Example usage
@@ -81,6 +87,20 @@ ssh apidev "npm run dev &"
 2. Use BashOutput(bash_id) to monitor progress
 3. Wait for completion/ready message before proceeding
 4. Only then test connectivity or continue workflow
+
+### CRITICAL: Separate Commands for Dependencies and Dev Server
+
+```bash
+# ❌ WRONG - Combined commands block proper monitoring
+ssh apidev "npm install && npm run dev"
+
+# ✅ CORRECT - Separate commands with proper monitoring
+ssh apidev "npm install"
+# Wait for completion
+ssh apidev "npm run dev"
+# PARAMETER: run_in_background: true
+BashOutput(bash_id="dev_server")  # Monitor startup
+```
 
 ## Environment Variable System
 
@@ -134,16 +154,39 @@ API_URL: http://${apidev_hostname}:3000
 PUBLIC_API: ${apistage_zeropsSubdomain}  # Already includes https://
 ```
 
-### CRITICAL Rule - No Hardcoded Hostnames:
-**NEVER hardcode service hostnames in application code:**
+### CRITICAL Environment Variable Rules
+
+**Rule 1: No Direct Service Variable References**
+```yaml
+# ❌ WRONG - Direct reference not supported
+API_URL: ${apidev_VARIABLE}  # Won't work
+
+# ✅ CORRECT - Must be mapped through envVariables
+run:
+  envVariables:
+    API_URL: ${apidev_hostname}  # Mapped explicitly
+```
+
+**Rule 2: Stage Services MUST Use Public URLs**
+```yaml
+# ❌ WRONG - Internal hostname for stage frontend
+build:
+  envVariables:
+    VITE_API_URL: http://apistage:3000  # Frontend can't reach!
+
+# ✅ CORRECT - Public URL for stage
+build:
+  envVariables:
+    VITE_API_URL: ${RUNTIME_apistage_zeropsSubdomain}  # Public access
+```
+
+**Rule 3: Never Hardcode in Application Code**
 ```javascript
-// ❌ WRONG - Hardcoded hostname in application
-const API_URL = 'http://apidev:3000';  
+// ❌ WRONG - Hardcoded hostname
+const API_URL = 'http://apidev:3000';
 
 // ✅ CORRECT - Use environment variable
-const API_URL = process.env.API_URL || process.env.BACKEND_URL;
-// Framework-specific patterns exist (see your framework's docs)
-// Common pattern: PUBLIC_ or APP_ prefix for client-side variables
+const API_URL = process.env.API_URL || process.env.VITE_API_URL;
 ```
 
 **Testing from zagent is different** - you CAN use direct hostnames:
@@ -225,13 +268,34 @@ Expected: [Desired outcome]"
 
 ## Common Deployment Patterns
 
-### Dev vs Stage Deployment Flags:
-```bash
-# DEV: Include source code and dependencies
-ssh apidev "zcli push --serviceId={DEV_ID} --setup=dev --deploy-git-folder"
+### CRITICAL Deployment Command Structure
 
-# STAGE: Built artifacts only
-ssh apistage "zcli push --serviceId={STAGE_ID} --setup=stage"
+**MANDATORY: Always get serviceId from discovery, NEVER guess or omit**
+
+```bash
+# ✅ CORRECT - Dev deployment with all required flags
+ssh apidev "zcli push --serviceId={EXACT_ID_FROM_DISCOVERY} --setup=dev --deploy-git-folder"
+# PARAMETER: run_in_background: true
+
+# ✅ CORRECT - Stage deployment (no --deploy-git-folder)
+ssh apistage "zcli push --serviceId={EXACT_ID_FROM_DISCOVERY} --setup=stage"
+# PARAMETER: run_in_background: true
+
+# ❌ WRONG - Missing --serviceId
+ssh apidev "zcli push --setup=dev"  # WILL FAIL
+
+# ❌ WRONG - Missing --deploy-git-folder for dev
+ssh apidev "zcli push --serviceId={ID} --setup=dev"  # Won't include source
+```
+
+### deployFiles Pattern - CRITICAL
+
+```yaml
+# ❌ WRONG - Creates /var/www/dist/index.html (404!)
+deployFiles: dist
+
+# ✅ CORRECT - Extracts contents to /var/www/index.html
+deployFiles: dist/~  # The ~ wildcard is MANDATORY for static sites
 ```
 
 ### Service Type Patterns:
