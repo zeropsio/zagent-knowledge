@@ -1,5 +1,21 @@
 # Shared Knowledge for Zerops Agents
 
+## Available MCP Tools
+
+**All agents have access to Zerops MCP tools. Key functions include:**
+- `discovery(project_id)` - Get current state of all services
+- `import_services(project_id, yaml)` - Create new services
+- `knowledge_base(runtime)` - Get YAML patterns and configs
+- `restart_service(service_id)` - Restart a service
+- `set_project_env(project_id, key, value)` - Set project-wide env var
+- `set_service_env(service_id, key, value)` - Set service env var
+- `enable_preview_subdomain(service_id)` - Enable public access
+- `remount_service(service_name)` - Fix SSHFS mount issues
+- `get_service_logs(service_id)` - Retrieve logs
+- `get_running_processes()` - Monitor active processes
+- `scale_service(service_id)` - Configure resources
+- Plus many more - see MCP documentation for full list
+
 ## 🚨 CRITICAL: Remote Service Architecture
 
 **ALL operations happen on remote service containers, NOT locally:**
@@ -176,11 +192,15 @@ run:
 - **Build-time vars**: Must be in zerops.yml
 
 **🚨 STATIC vs SSR Environment Variables:**
-- **Static sites (CSR)**: Variables go in `build.envVariables` - NO RUNTIME_ prefix!
-  - They're baked into the JS bundle at build time
-  - Example: `VITE_API_URL: ${apistage_zeropsSubdomain}`
+- **Static sites (CSR)**: Variables MUST go in `build.envVariables`
+  - Why: Static sites are just HTML/JS/CSS files served by nginx
+  - The nginx container has NO application runtime - it just serves files
+  - Variables must be baked into the JS bundle during BUILD
+  - After build, it's just static files - no way to inject variables
+  - Example: `VITE_API_URL: ${apistage_zeropsSubdomain}` in build section
 - **SSR sites**: Variables can go in `run.envVariables`
-  - They're available at runtime on the server
+  - Why: SSR has a Node.js runtime that can read env vars
+  - The server can access variables at runtime
   - Use RUNTIME_ prefix only when build needs runtime vars
 
 ### Critical Restart Pattern:

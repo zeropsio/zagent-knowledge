@@ -468,28 +468,35 @@ done
 **Remember: If a browser will call it, it needs a public URL.**
 
 ```yaml
-# Core principle: Browsers can't reach internal hostnames
-# This determines WHAT value to use (public vs internal)
-# Your framework determines WHERE to put it (build vs run)
-
-# Example for any frontend that browsers will access:
+# STATIC sites (served by nginx) - variables MUST be in build:
 build:
   envVariables:
-    # Name it whatever your framework expects
-    API_URL: ${apistage_zeropsSubdomain}  # Public URL for browser access
+    API_URL: ${apistage_zeropsSubdomain}  # Gets compiled into JS bundle
+# Why: After build, it's just static files. Nginx only serves files - no runtime!
+
+# SSR sites (Node.js runtime) - variables can be in run:
+run:
+  envVariables:
+    API_URL: ${apistage_zeropsSubdomain}  # Read at runtime by Node.js
+# Why: Node.js server can read env vars while running
 
 # Backend service (only called internally):
 run:
   envVariables:
     DATABASE_URL: ${db_connectionString}  # Internal is fine
     CACHE_HOST: ${cache_hostname}          # Internal is fine
-    FRONTEND_URL: ${webstage_zeropsSubdomain}  # Public if needed externally
 ```
+
+**Why static sites can't use runtime env vars:**
+- Static = HTML/JS/CSS files served by nginx
+- Nginx is just a file server - no application runtime
+- Variables must be baked in during build
+- Once built, they're just files - can't change
 
 **The RUNTIME_ prefix:**
 - Only used when BUILD process needs a variable that exists at RUNTIME
 - Rare case - most frameworks handle this differently
-- Has nothing to do with the browser rule
+- Has nothing to do with static vs SSR
 
 ### Service Communication Patterns
 ```yaml

@@ -168,14 +168,20 @@ CLEANUP PHASE (Essential):
 **CRITICAL: NEVER CREATE ZEROPS.YML FILES WITHOUT KNOWLEDGE_BASE LOOKUP**
 
 ```bash
+# Check available service types first (optional but helpful)
+mcp__zerops__get_service_types()  # Lists all 67+ available service types
+
 # For service import YAML patterns - REQUIRED FIRST STEP
-mcp__zerops__knowledge_base("service_import")
+mcp__zerops__knowledge_base(runtime="service_import")
 
 # For database patterns
-mcp__zerops__knowledge_base("database_patterns")
+mcp__zerops__knowledge_base(runtime="database_patterns")
 
 # For runtime deployment configs
-mcp__zerops__knowledge_base("nodejs")  # or python, go, php, ruby, rust, java, dotnet
+mcp__zerops__knowledge_base(runtime="nodejs")  # or python, go, php, ruby, rust, java, dotnet
+
+# For workflow guidance (optional)
+mcp__zerops__load_platform_guide(path_type="fresh_project")  # or existing_service, add_services
 ```
 
 **CRITICAL: ONE ZEROPS.YML PER SERVICE - MONOREPO SUPPORT**
@@ -404,7 +410,7 @@ app.listen(PORT, '0.0.0.0', () => {
 
 **Get proper YAML patterns from knowledge_base:**
 ```bash
-mcp__zerops__knowledge_base("nodejs")  # Returns zerops.yml patterns
+mcp__zerops__knowledge_base(runtime="nodejs")  # Returns zerops.yml patterns
 ```
 
 **Create zerops.yml files with basic env mappings for validation:**
@@ -643,9 +649,9 @@ Dev services are internal development only. Preview subdomains are ONLY for stag
 
 ```bash
 # STEP 1: ALWAYS query knowledge_base first
-mcp__zerops__knowledge_base("service_import")   # Get service import patterns
-mcp__zerops__knowledge_base("database_patterns") # For database services  
-mcp__zerops__knowledge_base("nodejs")            # Get runtime-specific configs
+mcp__zerops__knowledge_base(runtime="service_import")   # Get service import patterns
+mcp__zerops__knowledge_base(runtime="database_patterns") # For database services  
+mcp__zerops__knowledge_base(runtime="nodejs")            # Get runtime-specific configs
 
 # STEP 2: Use returned patterns in import_services() 
 # STEP 3: Never create files manually
