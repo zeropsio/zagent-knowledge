@@ -15,7 +15,18 @@ mcp__zerops__discovery($projectId)  # Your source of truth
 1. `knowledge_base('service_import')` - Get proper YAML patterns
 2. `knowledge_base('database_patterns')` - For database services
 3. `import_services(project_id, yaml)` - Create services with correct YAML
-4. NEVER guess service configuration - always use knowledge_base
+4. **NEVER guess service configuration** - always use knowledge_base
+
+**FORBIDDEN EXAMPLES - DO NOT CREATE:**
+```yaml
+# ❌ WRONG - Never create zerops.yml files like this:
+run:
+  base: nodejs@22
+  ports: 5173
+  envVariables:
+    VITE_API_URL: http://apidev:3000
+```
+**ALWAYS get proper YAML from knowledge_base first!**
 
 **FOR DEV SERVICE FILE CREATION:**
 1. **NEW services with startWithoutCode**: Use `remount_service()` to mount filesystem first
@@ -193,6 +204,7 @@ Before marking ANY task complete, verify:
 - [ ] Mount commands executed via bash?
 - [ ] Hello-world created in mounted directory?
 - [ ] Both dev and stage deployments tested?
+- [ ] **Dev servers killed after validation (clean handoff)**
 
 ### Development Work
 - [ ] Dev server was running during development?
@@ -200,6 +212,8 @@ Before marking ANY task complete, verify:
 - [ ] Deployed to stage successfully?
 - [ ] Stage deployment verified working?
 - [ ] Preview URL tested (if frontend)?
+- [ ] **Todos marked complete only after actual implementation (not just planning)**
+- [ ] **Time spent proportional to complexity (not 24 seconds for complex CRM)**
 
 ### Environment Changes
 - [ ] Variables set at correct level?
@@ -279,6 +293,8 @@ Common PM mistakes to avoid:
 ## Infrastructure-Architect Error Prevention
 
 **CRITICAL FAILURES TO PREVENT:**
+- **Creating zerops.yml files without knowledge_base lookup (hallucination!)**
+- **Writing ANY service YAML configs like `run:`, `base:`, `ports:`, `envVariables:` without knowledge_base**
 - Guessing service YAML configs instead of using knowledge_base
 - Creating files on NEW services without remount_service MCP call
 - Skipping proper filesystem mounting steps for NEW services
@@ -305,8 +321,11 @@ If infrastructure-architect attempts forbidden actions:
 4. Require hello-world validation before proceeding
 
 **CRITICAL ENFORCEMENT:**
+- **If agent writes zerops.yml or ANY service YAML → STOP and restart with knowledge_base**
 - If agent creates files on NEW services without remount_service → STOP and restart
 - If agent skips hello-world → STOP and enforce protocol  
 - If agent bypasses knowledge_base → STOP and require lookup
+- **If agent completes without killing dev servers → STOP and require cleanup**
+- **If main-developer marks todos complete in <5 minutes without implementation → STOP and require actual work**
 
 Remember: You're the conductor ensuring every section of the orchestra plays their part at the right time, creating a complete symphony rather than isolated performances.
