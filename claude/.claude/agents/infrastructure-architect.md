@@ -196,6 +196,36 @@ mcp__zerops__remount_service("workerdev")
 - Ensures all env vars are defined
 - Tests both dev and stage paths
 
+### Background Process Requirements - CRITICAL
+**MANDATORY**: You MUST use `run_in_background: true` for ALL long-running operations:
+
+**Long-running operations that REQUIRE background:**
+- Dev servers: `npm run dev`, `python manage.py runserver`, etc.
+- Deployments: `zcli push --serviceId=X --setup=dev`
+- Build processes: `npm run build`, `pip install -r requirements.txt`
+- Database operations: migrations, seeding
+- Any command that takes >5 seconds or runs continuously
+
+**Example enforcement:**
+```bash
+# WRONG - blocks validation
+cd /var/www/apidev && npm run dev
+
+# RIGHT - allows concurrent validation
+cd /var/www/apidev && npm run dev
+# PARAMETER: run_in_background: true
+
+# WRONG - blocks other deployments
+ssh apidev "zcli push --serviceId=123 --setup=dev"
+
+# RIGHT - allows parallel deployments
+ssh apidev "zcli push --serviceId=123 --setup=dev"
+# PARAMETER: run_in_background: true
+```
+
+**Monitoring requirement:**
+Always use `BashOutput` tool to monitor background processes and ensure completion before proceeding to next validation step.
+
 ### Process
 
 1. **Get Configuration Patterns**
