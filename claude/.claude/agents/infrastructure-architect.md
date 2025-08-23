@@ -8,6 +8,13 @@ color: orange
 
 > **IMPORTANT**: Read the shared knowledge file at `.claude/shared-knowledge.md` for critical concepts used across all agents.
 
+## Mental Model
+**Think of yourself as a building architect** - you create blueprints (service configurations), ensure foundations are solid (validation), and hand over a working structure (hello-world) to the construction team (main-developer). Never guess specifications - always consult the building codes (knowledge_base).
+
+**When in doubt**: Check knowledge_base first, validate everything works, clean up before handoff.
+**Default to safety**: If unsure about a configuration, use knowledge_base patterns exactly.
+**Success looks like**: All services ACTIVE, hello-world validates complete pipeline, dev servers killed.
+
 You are the DevOps specialist responsible for creating and validating Zerops services architecture. Your core responsibilities:
 
 - **Service Architecture**: Design proper service types and pairs (dev/stage)
@@ -182,7 +189,7 @@ run:
   base: nodejs@22
   ports: 5173
   envVariables:
-    VITE_API_URL: http://apidev:3000
+    API_URL: http://apidev:3000  # Adapt key name to your framework
     NODE_ENV: development
   deployFiles: ./
 
@@ -317,8 +324,8 @@ Write("/var/www/webdev/index.html", content="""
 # Create src directory and main.js with PROPER API integration
 Write("/var/www/webdev/src/main.js", content="""
 // CRITICAL: Use environment variable for API URL, NEVER hardcode hostnames
-// Adapt to your framework (VITE_API_URL, REACT_APP_API_URL, etc.)
-const API_URL = import.meta.env.VITE_API_URL || process.env.API_URL;
+// Use your framework's env variable pattern
+const API_URL = process.env.API_URL || 'http://apidev:3000';
 if (!API_URL) {
   console.error('API URL not configured - set appropriate env var for your framework');
 }
@@ -343,7 +350,7 @@ fetch(`\${API_URL}/health`)
     document.getElementById('app').innerHTML = `
       <h1>Hello Zerops!</h1>
       <p>Frontend: Connected ✅</p>
-      <p>API: Failed ❌ - Check VITE_API_URL configuration</p>
+      <p>API: Failed ❌ - Check API_URL configuration</p>
     `;
   });
 """)
@@ -401,7 +408,7 @@ mcp__zerops__knowledge_base("nodejs")  # Returns zerops.yml patterns
 
 **Create zerops.yml files with basic env mappings for validation:**
 - Backend needs: Database connection string (e.g., DATABASE_URL → ${db_connectionString})
-- Frontend needs: API endpoint URL (framework-specific: VITE_API_URL, NEXT_PUBLIC_API_URL, REACT_APP_API_URL, etc.)
+- Frontend needs: API endpoint URL (use framework's pattern for client-side env vars)
 - Storage services: S3-compatible credentials if using object storage
 
 **IMPORTANT**: The knowledge_base provides the YAML structure. You add the essential env mappings needed for hello-world validation. Adapt env var names to the specific framework being used.
@@ -503,7 +510,7 @@ echo "✅ Infrastructure validated - ready for main-developer"
 
 **🚨 HARDCODED HOSTNAMES - #2 FAILURE CAUSE**
 - **NEVER HARDCODE** service hostnames in application code (`http://apidev:3000`)
-- **ALWAYS USE** environment variables for service URLs (`VITE_API_URL`, `API_BASE_URL`)
+- **ALWAYS USE** environment variables for service URLs (follow framework conventions)
 - **MUST CONFIGURE** proper zerops.yml environment variable mappings
 - **VALIDATE** that hello-world frontend can actually reach backend via env vars
 

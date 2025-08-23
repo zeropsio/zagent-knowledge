@@ -140,11 +140,10 @@ PUBLIC_API: ${apistage_zeropsSubdomain}  # Already includes https://
 // ❌ WRONG - Hardcoded hostname in application
 const API_URL = 'http://apidev:3000';  
 
-// ✅ CORRECT - Use environment variable (framework-specific)
+// ✅ CORRECT - Use environment variable
 const API_URL = process.env.API_URL || process.env.BACKEND_URL;
-// React: process.env.REACT_APP_API_URL
-// Vue/Vite: import.meta.env.VITE_API_URL
-// Next.js: process.env.NEXT_PUBLIC_API_URL
+// Framework-specific patterns exist (see your framework's docs)
+// Common pattern: PUBLIC_ or APP_ prefix for client-side variables
 ```
 
 **Testing from zagent is different** - you CAN use direct hostnames:
@@ -165,6 +164,35 @@ API_URL: ${apistage_zeropsSubdomain}
 # ❌ WRONG - Double protocol
 API_URL: https://${apistage_zeropsSubdomain}
 ```
+
+## Agent Handoff Protocol
+
+### Explicit Handoff Structure
+When transferring work between agents, use this format:
+```yaml
+HANDOFF:
+  from: infrastructure-architect
+  to: main-developer
+  state:
+    services_created: [apidev, webdev, db]
+    validation_status: hello-world passed
+    env_vars_configured: [DB connection, API endpoints]
+    dev_servers: killed and cleaned up
+  next_steps: Feature implementation ready
+  warnings: None
+```
+
+### Retry Limits and Human Escalation
+- **Max 3 attempts** for any operation before escalating
+- **Clear error message** after max attempts
+- **Human intervention request** format:
+  ```
+  "Failed after 3 attempts. Human intervention needed:
+  Issue: [Specific problem]
+  Attempted: [What was tried]
+  Suspected cause: [Best guess]
+  Suggested action: [What human should check]"
+  ```
 
 ## Agent Escalation Boundaries
 
