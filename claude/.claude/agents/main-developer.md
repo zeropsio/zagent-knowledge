@@ -23,8 +23,8 @@ Target services are minimal - just runtime and zcli. Default SSH directory is `/
 echo $projectId  # Note for MCP calls
 mcp__zerops__discovery($projectId)  # See all services, IDs, env vars
 
-# 2. Check zerops.yml setups
-cat /var/www/apidev/zerops.yml | grep "setup:"  # Note setup names
+# 2. Check zerops.yml setups  
+Read("/var/www/apidev/zerops.yml")  # Note setup names from output
 ```
 
 ## Law 1: Dev Server ALWAYS First
@@ -78,7 +78,7 @@ curl -X POST -F "file=@test.pdf" http://apidev:3000/upload
 ### 3. MANDATORY Stage Deployment
 ```bash
 # Check setup name (RARELY matches service name!)
-grep "setup:" /var/www/apidev/zerops.yml
+Read("/var/www/apidev/zerops.yml")  # Look for "setup:" lines in output
 # Common: service=apidev but setup=api
 
 # Deploy with exact IDs from Discovery

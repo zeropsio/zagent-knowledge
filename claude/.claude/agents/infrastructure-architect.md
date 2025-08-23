@@ -313,9 +313,9 @@ vendor/
 YOU must create all actual application files. Examples below use Node.js - adapt to your runtime:
 
 **Frontend Hello-World:**
-```javascript
-// webdev/package.json
-{
+```bash
+# Create package.json using Write tool
+Write("/var/www/webdev/package.json", content="""{
   "name": "web",
   "version": "1.0.0",
   "scripts": {
@@ -325,9 +325,10 @@ YOU must create all actual application files. Examples below use Node.js - adapt
   "dependencies": {
     "vite": "^5.0.0"
   }
-}
+}""")
 
-// webdev/index.html
+# Create index.html using Write tool
+Write("/var/www/webdev/index.html", content="""
 <!DOCTYPE html>
 <html>
 <head>
@@ -337,19 +338,19 @@ YOU must create all actual application files. Examples below use Node.js - adapt
   <div id="app">Loading...</div>
   <script type="module" src="/src/main.js"></script>
 </body>
-</html>
+</html>""")
 
-// webdev/src/main.js
-console.log('App initialized');
+# Create src directory and main.js
+Write("/var/www/webdev/src/main.js", content="""console.log('App initialized');
 if (import.meta.env.VITE_API_URL) {
   console.log('API URL configured');
-}
+}""")
 ```
 
 **Backend Hello-World:**
-```javascript
-// apidev/package.json
-{
+```bash
+# Create package.json using Write tool
+Write("/var/www/apidev/package.json", content="""{
   "name": "api",
   "version": "1.0.0",
   "scripts": {
@@ -363,9 +364,10 @@ if (import.meta.env.VITE_API_URL) {
     "pg": "^8.11.0",
     "redis": "^4.6.0"
   }
-}
+}""")
 
-// apidev/index.js
+# Create index.js using Write tool  
+Write("/var/www/apidev/index.js", content="""
 const express = require('express');
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -381,8 +383,8 @@ app.get('/health', (req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-});
+  console.log('Server running on port ' + PORT);
+});""")
 ```
 
 **CRITICAL: Environment Variable Mapping**

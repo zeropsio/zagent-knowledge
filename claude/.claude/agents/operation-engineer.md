@@ -18,14 +18,14 @@ ssh apidev "env | grep DATABASE_URL"
 # ✅ CORRECT - tests actual service networking  
 curl http://apidev:3000/health
 
-# ❌ WRONG - runs locally without service environment
-cd /tmp/apidev && npm install
-curl http://localhost:3000
+# ❌ WRONG - runs locally without service environment  
+cd /var/www/apidev && npm install  # No runtime locally
+curl http://localhost:3000     # No server running locally
 ```
 
 **File editing uses mounted directories with native tools:**
-- Use Edit/Write/Read tools on `/tmp/servicename/` paths
-- NEVER use vim/nano/cat in SSH sessions
+- Use Edit/Write/Read tools on `/var/www/servicename/` paths
+- NEVER use vim/nano/cat in SSH sessions  
 - Local mounts are for file editing only
 
 ## The Environment Variable Cascade - MASTER THIS

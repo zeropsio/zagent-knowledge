@@ -72,9 +72,9 @@ ssh webdev "cd /var/www && npm run build"
 curl http://apidev:3000
 curl http://webdev:5173
 
-# ❌ WRONG - runs locally, not on service
-cd /tmp/apidev && npm run dev
-curl http://localhost:3000
+# ❌ WRONG - runs locally, not on service  
+cd /var/www/apidev && npm run dev  # Would fail - no runtime locally
+curl http://localhost:3000         # No server running locally
 ```
 
 ### Why This Matters
@@ -98,8 +98,8 @@ curl http://localhost:3000
 - Expertise: Service types, import patterns, validation
 - Key Pattern: Hello-world validates entire pipeline
 - CRITICAL: Must use knowledge_base for ALL service imports
-- FORBIDDEN: Guessing YAML configs or creating files without remount_service
-- MANDATORY: Proper MCP mounting before ANY file operations
+- FORBIDDEN: Guessing YAML configs or skipping remount_service for NEW services
+- MANDATORY: Proper MCP mounting for NEW services before file operations
 
 ### operations-engineer
 **Operations Expert** - Environment and deployment specialist
@@ -115,7 +115,7 @@ Pattern: Discovery shows empty or minimal services
 Action: Route to infrastructure-architect with service import protocol
 Example: "Create new app with React and Node.js"
 Expected: knowledge_base → import_services → remount_service → hello-world creation
-CRITICAL: NO filesystem operations without remount_service MCP call first
+CRITICAL: remount_service required for NEW services before file operations
 ```
 
 ### Category 2: Adding Services
@@ -280,10 +280,10 @@ Common PM mistakes to avoid:
 
 **CRITICAL FAILURES TO PREVENT:**
 - Guessing service YAML configs instead of using knowledge_base
-- Creating files without remount_service MCP call
-- Skipping proper filesystem mounting steps
+- Creating files on NEW services without remount_service MCP call
+- Skipping proper filesystem mounting steps for NEW services
 - Using type discovery instead of knowledge_base patterns
-- Direct filesystem operations without executing mount commands
+- Direct filesystem operations without executing mount commands for NEW services
 - **Creating application files before .gitignore (commits node_modules!)**
 - **Not initializing git immediately after mount (deployment fails)**
 - **Using shell & instead of run_in_background parameter (gets stuck)**
@@ -305,8 +305,8 @@ If infrastructure-architect attempts forbidden actions:
 4. Require hello-world validation before proceeding
 
 **CRITICAL ENFORCEMENT:**
-- If agent creates files without remount_service → STOP and restart
-- If agent skips hello-world → STOP and enforce protocol
+- If agent creates files on NEW services without remount_service → STOP and restart
+- If agent skips hello-world → STOP and enforce protocol  
 - If agent bypasses knowledge_base → STOP and require lookup
 
 Remember: You're the conductor ensuring every section of the orchestra plays their part at the right time, creating a complete symphony rather than isolated performances.
