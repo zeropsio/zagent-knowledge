@@ -18,10 +18,11 @@ mcp__zerops__discovery($projectId)  # Your source of truth
 4. NEVER guess service configuration - always use knowledge_base
 
 **FOR DEV SERVICE FILE CREATION:**
-1. Services already have persistent mounted directories at `/var/www/[service]/`
-2. Use Edit/Write/Read tools directly on these mounted paths
-3. Create hello-world files using native tools
-4. NEVER create local files without using mounted service directories
+1. **NEW services with startWithoutCode**: Use `remount_service()` to mount filesystem first
+2. **Existing services**: Directories already mounted at `/var/www/[service]/`
+3. Use Edit/Write/Read tools directly on mounted paths
+4. Create hello-world files using native tools
+5. NEVER create local files without using mounted service directories
 
 ## CRITICAL: Remote Service Execution Architecture
 
@@ -41,8 +42,9 @@ Read("/var/www/apidev/zerops.yml")
 ```
 
 ### When to Use remount_service()
-**ONLY use when filesystem access is broken:**
-- When file system access fails
+**Required for NEW services and when filesystem access is broken:**
+- **NEW services with startWithoutCode** - Initial filesystem mounting required
+- When file system access fails - "Transport endpoint not connected"
 - After network connectivity issues  
 - When getting file permission errors
 - To refresh SSHFS connections
@@ -50,8 +52,11 @@ Read("/var/www/apidev/zerops.yml")
 - After restarting any service
 
 ```bash
-# Only when you see errors like:
-ls /var/www/apidev/ # "Transport endpoint not connected"
+# For NEW services after import_services:
+mcp__zerops__remount_service("apidev")  # Mount filesystem first time
+
+# Or when you see errors like:
+ls /var/www/apidev/ # "Transport endpoint not connected" 
 # THEN use: mcp__zerops__remount_service("apidev")
 ```
 
