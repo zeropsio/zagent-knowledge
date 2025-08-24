@@ -1,21 +1,5 @@
 # Shared Knowledge for Zerops Agents
 
-## Available MCP Tools
-
-**All agents have access to Zerops MCP tools. Key functions include:**
-- `discovery(project_id)` - Get current state of all services
-- `import_services(project_id, yaml)` - Create new services
-- `knowledge_base(runtime)` - Get YAML patterns and configs
-- `restart_service(service_id)` - Restart a service
-- `set_project_env(project_id, key, value)` - Set project-wide env var
-- `set_service_env(service_id, key, value)` - Set service env var
-- `enable_preview_subdomain(service_id)` - Enable public access
-- `remount_service(service_name)` - Fix SSHFS mount issues
-- `get_service_logs(service_id)` - Retrieve logs
-- `get_running_processes()` - Monitor active processes
-- `scale_service(service_id)` - Configure resources
-- Plus many more - see MCP documentation for full list
-
 ## 🚨 CRITICAL: Remote Service Architecture
 
 **ALL operations happen on remote service containers, NOT locally:**
@@ -29,7 +13,7 @@ Read("/var/www/apidev/zerops.yml")
 
 # ✅ CORRECT - Service operations use SSH to remote containers
 ssh apidev "npm install"    # /var/www is default SSH directory
-ssh apidev "npm run dev"    
+ssh apidev "npm run dev"
 ssh webdev "npm run build"
 
 # ✅ CORRECT - Network testing targets remote services
@@ -41,15 +25,9 @@ cd /var/www/apidev && npm run dev  # Would fail - no Node.js runtime locally
 curl http://localhost:3000         # No server running locally
 ```
 
-### Service Directory Mounts
-```bash
-# Service directories are ALREADY MOUNTED at startup:
-# /var/www/apidev/   - mounted from apidev service
-# /var/www/webdev/   - mounted from webdev service  
-# /var/www/apistage/ - mounted from apistage service
-```
+### Mount your dev services!
 
-### When to Use remount_service()
+When to Use remount_service() tool:
 **ONLY use in these specific scenarios:**
 - **NEW services with startWithoutCode** - Initial filesystem mounting required
 - **After successful deployment to dev** - Mount updated filesystem (NOT stage)
@@ -57,6 +35,7 @@ curl http://localhost:3000         # No server running locally
 - **PM initial check** - If discovery shows ACTIVE dev but /var/www/{service}/ empty
 
 **DO NOT use for:**
+- When already mounted from previous work
 - Regular file operations
 - Before every deployment
 - As a "just in case" measure
@@ -91,7 +70,7 @@ ssh apidev "npm run dev"
 # Monitor until ready
 BashOutput(bash_id="abc123")  # Check until "Server running on port 3000"
 
-# ❌ WRONG - Blocks all other operations  
+# ❌ WRONG - Blocks all other operations
 ssh apidev "npm run dev"  # Without run_in_background
 
 # ❌ WRONG - Shell background (unreliable)
@@ -217,7 +196,7 @@ run:
 # ✅ Service-to-service (internal) - in zerops.yml
 API_URL: http://${apidev_hostname}:3000
 
-# ✅ External access via zeropsSubdomain  
+# ✅ External access via zeropsSubdomain
 PUBLIC_API: ${apistage_zeropsSubdomain}  # Already includes https://
 ```
 
@@ -257,7 +236,7 @@ API_URL: http://apistage:3000  # Fails from any browser!
 # ✅ CORRECT - Use public URL for anything browser-accessible
 API_URL: ${apistage_zeropsSubdomain}  # Works from anywhere
 
-# The variable name (API_URL, BACKEND_URL, etc.) and where you put it 
+# The variable name (API_URL, BACKEND_URL, etc.) and where you put it
 # (build.envVariables or run.envVariables) depends on your framework.
 # The principle remains: browsers need public URLs.
 ```
@@ -280,9 +259,9 @@ const API_URL = process.env.API_URL || process.env.VITE_API_URL;
 **Testing from zagent is different** - you CAN use direct hostnames:
 ```bash
 # ✅ OK for testing from zagent
-curl http://apidev:3000/health  
+curl http://apidev:3000/health
 
-# ✅ OK in SSH commands  
+# ✅ OK in SSH commands
 ssh apidev "curl http://localhost:3000/health"
 ```
 
@@ -333,7 +312,7 @@ HANDOFF:
 
 ### Infrastructure-Architect Handles:
 - Service creation and import
-- Architecture decisions  
+- Architecture decisions
 - YAML configuration patterns
 - Hello-world validation
 
@@ -354,7 +333,7 @@ HANDOFF:
 "@[agent-name]: [SPECIFIC REQUIREMENT]
 
 Context: [Current situation]
-Problem: [Exact issue]  
+Problem: [Exact issue]
 Expected: [Desired outcome]"
 ```
 
@@ -474,7 +453,7 @@ ps aux | grep -E '(node|python|go)'
 # If knowledge_base fails
 Retry once → Use cached patterns → Escalate to PM
 
-# If import_services fails  
+# If import_services fails
 Check YAML syntax → Retry with corrections → Escalate to PM
 
 # If restart/deploy fails
